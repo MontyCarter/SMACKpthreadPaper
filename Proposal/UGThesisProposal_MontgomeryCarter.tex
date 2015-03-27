@@ -1,0 +1,98 @@
+\documentclass{scrartcl}
+\setkomafont{disposition}{\normalfont\bfseries}
+\usepackage{amsmath,eulervm,palatino,amssymb,amsthm,parskip,graphicx,cite}
+\usepackage[top=0.5in, bottom=0.5in, left=0.5in, right=0.5in]{geometry}
+
+
+\title{Undergraduate Research Thesis Proposal}
+\subtitle{Modeling Concurrency: Extending SMACK to Support Pthreads}
+\author{Montgomery Carter}
+\date{Spring 2015}
+
+\begin{document}
+
+%------------------------------------------------------------------------------
+% TITLE PAGE
+%------------------------------------------------------------------------------
+
+\maketitle
+
+\begin{abstract}
+SMACK is a static analysis tool for C/C++ programs.  Although SMACK is an active project with support from both academia and industry, it currently lacks support for any form of concurrency.  The proposed research will extend SMACK to include support for a common subset of the Pthreads API.  In addition to extending SMACK, the proposed research will result in an examination of the generic constructs useful for modeling general concurrency within the context of model checking and symbolic execution.
+\end{abstract}
+
+\newpage
+
+%------------------------------------------------------------------------------
+% INTRODUCTION
+%------------------------------------------------------------------------------
+
+\section{Introduction}
+
+Verification of programs using formal methods has long been a promising area whose practical adoption has gone unrealized.  Recent advances in computing performance and verification algorithms have made these well-understood formal verification techniques available for real world applications.  As practical adoption of formal verification becomes a reality, it has become necessary to create tools that address the use cases where formal verification will be most advantageous.
+
+One such use case is the verification of concurrent programs.  As multi-core systems become more ubiquitous, the parallel programming paradigm is increasingly relevant.  Parallel programming presents a unique challenge for developers, as an extra dimension of complexity is introduced.  Indeed, concurrent programs can suffer from a host of issues that simply do not apply to the sequential programming paradigm, such as race conditions and deadlocks.  As a result, verification tools suited for real world usage should support concurrency.
+
+SMACK is a static analysis tool that is the result of a joint effort between the University of Utah, IMDEA Software Institute, and Microsoft Research~\cite{smack}.  With a growing user base and active support from both the academic and industry communities, it is a good candidate for continued development.  SMACK, however, currently lacks support for any form of concurrency.  As such, though Pthreads support has been implemented in other formal verification tools, the community will benefit from extending SMACK with a model to support symbolic execution of C/C++ programs that utilize the Pthreads library.
+
+My proposed research will extend SMACK with a model of a common subset of the Pthreads API, enabling verification of C/C++ programs utilizing the Pthreads library.  Extending SMACK to provide support for programs using Pthreads not only provides the SMACK community with support for a common concurrency paradigm, but also presents an opportunity to investigate general constructs useful for modeling concurrency.  These constructs, which will necessarily result from extending SMACK, will lend themselves to modeling other concurrency libraries like OpenMP and MPI.  Further, the resulting constructs should be general enough for use within other verification tools.
+
+%------------------------------------------------------------------------------
+% BACKGROUND
+%------------------------------------------------------------------------------
+
+\section{Background}
+SMACK itself is a essentially a compiler that takes C/C++ code, generates a symbolic model of the code, and then converts it into Boogie ~\cite{boogie}, an intermediate verification language (IVL)~\cite{smack}.  This converted Boogie code is then consumed by Corral~\cite{corral}, a static analysis tool that evaluates validity of assertions present in the original code.
+
+In general, Boogie is a low level language.  It contains support for little more than a typing system, basic arithmetic and boolean expressions \& statements, control flow \& procedure calls, and constraint specification~\cite{boogie}.  Any more complicated semantics of the source language must be modeled using the basic set of primitives available in the language.  For example, memory can be modeled as a large array of integers, where C pointers are simply indices into this array.  Though this gives freedom to support a large variety of models of computation and source languages, it requires that models be created to define the semantics of operations available within the source languages.
+
+Corral provides an extension to the Boogie language that includes a very basic API for handling concurrency.  This extension includes calls to start an asynchronous function call, get thread id, begin an atomic section, and end an atomic section.  The Pthreads API is much more complex than these concurrency primitives recognized by Corral.  As a result, to provide support for the more complex Pthreads API within SMACK, it is necessary to model the behavior of the Pthreads API using the primitives provided by Corral.
+
+There are several projects, including Inspect and CIVL, that provide support for Pthreads~\cite{civl}\cite{inspect}.  I will be referring to their implementations, as well as using their benchmarks and regression tests to assess the accuracy of the new implementation within SMACK.
+
+%------------------------------------------------------------------------------
+% METHODOLOGY
+%------------------------------------------------------------------------------
+
+\section{Plan, Timeline, and Scope}
+The project can be broken up in to two main phases: developing a model for a common subset of the Pthreads API in SMACK, and testing the implementation against benchmarks \& refining the model to address any inaccuracies.
+
+I plan to write my thesis concurrently with the completion of my research.   A large portion of my thesis will be dedicated to the details of how certain concurrency constructs were modeled.  As a result, writing the bulk of the thesis while completing research will allow me to get things written up while the details are still fresh.  Though I plan to write my thesis concurrently with research, I have allocated some time after the two main phases for completion of the thesis document.
+
+\subsection{Model Pthreads API}
+
+\subsubsection{Identify Subset of API to Model} 
+
+For the first phase,  I will identify the subset of the Pthreads API to be modeled.  This will, of course, include the core set of essential functions such as fork, join, and lock.  However, this will also include all of the most commonly utilized functions found in the benchmarks that will be used to verify the accuracy of the implementation.  
+
+The resulting list of API calls will be prioritized for the most commonly occurring calls.  The number of additional calls, past the set essential functions, that get implemented will depend on the amount of time remaining after implementing the core set of essential functions.  I plan to have the Pthreads API subset selected by February 16th, 2015.
+
+\subsubsection{Model Implementation}
+
+Once the API subset has been identified, I will generate a set of regression tests for each API call to determine whether the behavior of the model conforms to the behavior defined in the Pthreads specification.  This is simply a matter of going through the Pthreads specification and generating C programs that test each of the behaviors required of the API calls.  After each API call has quality regressions, I will model the behavior of the call, ensuring that the implemented model passes its regressions.
+
+I expect that this process will be iterative: I will pick one (or a few related) call(s), generate regressions to test for the specified behavior, and implement a model that passes the regressions.  This will be repeated until cutoff date for the Modeling phase of my project, or until the full list of identified Pthread API calls has been modeled.  I intend to set this cutoff date at March 16th, 2015.  This should leave sufficient time for thorough benchmark testing and writing of my thesis.
+
+The very most basic of the Pthreads API calls are already implemented, and are passing a majority of their regressions.  This includes general forking, joining, and basic locking.  However, some of the details of these basic calls are not fully fleshed out.  For example, there is no ``exit()'' primitive in Boogie, so there is currently no way to tell Corral to stop analyzing a thread prematurely.  There are several inaccuracies like this, where the behavior of the model doesn't correctly reflect the semantics of the Pthreads specification.  Such discrepancies need to be corrected.
+
+This core set of essential functions will be the most time consuming to implement, since many of the other API calls involve small variants on a common behavior (such as ``pthread\_mutex\_lock()'' vs ``pthread\_mutex\_trylock()'', where the former blocks the thread until the lock is available, and the latter returns with an error code immediately if the lock is unavailable).  Because of this, I think it is not unreasonable to complete the modeling by the middle of March.
+
+\subsection{Test Benchmarks}
+Once the selected API call models are passing all of their regressions, it will be important to ensure that the regressions were correct, and that accuracy and performance of the implementation is sufficient for real world use.  There are several software verification competitions that include a set of benchmarks for Pthread analysis, as well as several academic projects which we've identified as being a good source for additional test cases.
+
+I will run these benchmark tests against my implementation to assess it for accuracy and performance.  This will likely occur concurrent with the modeling phase of the project for the core set of essential API calls, since any major problems with the model of these core functions would likely be carried over to the variants that use a very similar logic (again, such as lock vs trylock).
+
+After the cutoff date for the Modeling phase, all benchmarks will be tested against the completed models to ensure everything is working as a whole.  I plan to have this benchmarking process completed by March 30, 2015.  I have allotted myself with two weeks for this portion of the project, to provide me with sufficient time to fix any bugs discovered during benchmarking.  
+
+The benchmark testing deadline of March 30th leaves me with about a month to complete my thesis document before the end of the semester.
+
+
+
+%------------------------------------------------------------------------------
+% REFERENCES
+%------------------------------------------------------------------------------
+\bibliographystyle{ieeetr}
+\bibliography{UGThesisProposal_MontgomeryCarter}
+
+
+\end{document}
