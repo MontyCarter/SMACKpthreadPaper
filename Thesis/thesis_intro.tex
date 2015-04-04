@@ -1,0 +1,13 @@
+\chapter{Introduction}\label{thesis_intro}
+
+Verification of programs using formal methods has long been a promising area whose practical adoption has gone unrealized.  Recent advances in computing performance and verification algorithms have made these well-understood formal verification techniques available for real world applications.  As practical adoption of formal verification becomes a reality, it has become necessary to create tools that address the use cases where formal verification will be most advantageous.
+
+One such use case is the verification of concurrent programs.  As multi-core systems become more ubiquitous, the parallel programming paradigm is increasingly relevant.  Parallel programming presents a unique challenge for developers, as an extra dimension of complexity is introduced.  Indeed, concurrent programs can suffer from a host of issues that simply do not apply to the sequential programming paradigm, such as race conditions and deadlocks.  As a result, verification tools suited for real world usage should support concurrency.
+
+SMACK is a static analysis tool that is the result of a joint effort between the University of Utah, IMDEA Software Institute, and Microsoft Research~\cite{smack}.  With a growing user base and active support from both the academic and industry communities, it is a good candidate for continued development.  SMACK, however, currently lacks support for any form of concurrency.  As such, though Pthreads support has been implemented in other formal verification tools, the community will benefit from extending SMACK with a model to support symbolic execution of C/C++ programs that utilize the Pthreads library.
+
+My proposed research will extend SMACK with a model of a common subset of the Pthreads API, enabling verification of C/C++ programs utilizing the Pthreads library.  Extending SMACK to provide support for programs using Pthreads not only provides the SMACK community with support for a common concurrency paradigm, but also presents an opportunity to investigate general constructs useful for modeling concurrency.  These constructs, which will necessarily result from extending SMACK, will lend themselves to modeling other concurrency libraries like OpenMP and MPI.  Further, the resulting constructs should be general enough for use within other verification tools.
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "thesis"
+%%% End: 

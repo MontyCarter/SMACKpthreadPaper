@@ -1,0 +1,12 @@
+\chapter{Background}\label{thesis_background}
+SMACK itself is a essentially a compiler that takes C/C++ code, generates a symbolic model of the code, and then converts it into Boogie ~\cite{boogie}, an intermediate verification language (IVL)~\cite{smack}.  This converted Boogie code is then consumed by Corral~\cite{corral}, a static analysis tool that evaluates validity of assertions present in the original code.
+
+In general, Boogie is a low level language.  It contains support for little more than a typing system, basic arithmetic and boolean expressions \& statements, control flow \& procedure calls, and constraint specification~\cite{boogie}.  Any more complicated semantics of the source language must be modeled using the basic set of primitives available in the language.  For example, memory can be modeled as a large array of integers, where C pointers are simply indices into this array.  Though this gives freedom to support a large variety of models of computation and source languages, it requires that models be created to define the semantics of operations available within the source languages.
+
+Corral provides an extension to the Boogie language that includes a very basic API for handling concurrency.  This extension includes calls to start an asynchronous function call, get thread id, begin an atomic section, and end an atomic section.  The Pthreads API is much more complex than these concurrency primitives recognized by Corral.  As a result, to provide support for the more complex Pthreads API within SMACK, it is necessary to model the behavior of the Pthreads API using the primitives provided by Corral.
+
+There are several projects, including Inspect and CIVL, that provide support for Pthreads~\cite{civl}\cite{inspect}.  I will be referring to their implementations, as well as using their benchmarks and regression tests to assess the accuracy of the new implementation within SMACK.
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "thesis"
+%%% End: 

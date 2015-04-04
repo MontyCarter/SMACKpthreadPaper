@@ -1,0 +1,45 @@
+\documentclass[11pt,Chicago]{uuthesis}
+
+% SETUP
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage[utf8]{inputenc}
+\fourlevels
+\setcounter{tocdepth}{4}
+\addtocontents{toc}{\protect\sloppy}
+
+% INFO
+\title{Modeling Concurrency:\protect\\Extending SMACK to Support Pthreads}
+\author{Montgomery Carter}
+\supervisor{Zvonimir Rakamarić}
+\submitdate{May 2015}
+
+% DOCUMENT
+\begin{document}
+
+% front matter
+\frontmatterformat
+\titlepage
+\preface{thesis_abstract}{Abstract}
+\tableofcontents
+\listoffigures
+\listoftables
+\preface{thesis_acknowledge}{Acknowledgments}
+
+% body
+\maintext
+\include{thesis_intro}
+\include{thesis_background}
+\include{thesis_methodology}
+
+% end matter
+\numberofappendices=0
+\appendix
+%\include{appA}
+
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{thesis_bib}
+
+\end{document}
