@@ -5,18 +5,33 @@
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage[utf8]{inputenc}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
 \fourlevels
 \setcounter{tocdepth}{4}
 \addtocontents{toc}{\protect\sloppy}
 
 % INFO
 \title{Modeling Concurrency:\protect\\Extending SMACK to Support Pthreads}
+%Supporting pthreads in SMACK verifier
+%Pthreads extension for SMACK verifier
 \author{Montgomery Carter}
 \supervisor{Zvonimir Rakamarić}
 \submitdate{May 2015}
+\copyrightyear{2015}
+\thesistype{thesis}
 
 % DOCUMENT
 \begin{document}
+\lstset{basicstyle=\ttfamily}
+\lstset{language=C}
 
 % front matter
 \frontmatterformat
@@ -30,6 +45,7 @@
 % body
 \maintext
 \include{thesis_intro}
+\include{thesis_relatedwork}
 \include{thesis_background}
 \include{thesis_methodology}
 
