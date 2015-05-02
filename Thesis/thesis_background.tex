@@ -1,7 +1,7 @@
-\chapter{Background}
+\chapter{Background}\label{ch:background}
 Developing a full featured software verification tool from end-to-end can be a daunting task.  Bounded model checking requires several steps.  First, the input source code must be parsed or compiled.  The resulting abstract syntax tree (AST) must then be semantically interpreted, and a model built of underlying program semantics.  Finally, the modeled program must be represented as an SMT query and passed through an SMT solver.  This imposes a large barrier to entry for prototyping a new model checking algorithm, or building a verification tool for a new source language using existing algorithms.
 
-The Boogie intermediate verification language (IVL) was designed by Microsoft Research to alleviate the complexity of modeling new source languages and implementing new model checking algorithms.  Boogie IVL separates the task of modeling input program semantics from the task of bounding and checking modeled programs.  This allows model checking tools to take Boogie IVL files as input, rather than the input source language.  Similarly, front-end tools can translate to Boogie IVL rather than being directly integrated with the model checker.  By providing a clear, distinct interface between the two tasks, Boogie IVL [allow for modular tool components rather than end-to-end verification tools].
+The Boogie intermediate verification language (IVL) was designed by Microsoft Research to alleviate the complexity of modeling new source languages and implementing new model checking algorithms.  Boogie IVL separates the task of modeling input program semantics from the task of bounding and checking modeled programs.  This allows model checking tools to take Boogie IVL files as input, rather than the input source language.  Similarly, front-end tools can model the input program semantics in Boogie IVL rather than being directly integrating with the model checker.  By providing a clear, distinct interface between the two tasks, Boogie IVL [allow for modular tool components rather than end-to-end verification tools].
 
 Due to its goal of creating an abstraction between program modeling and model checking, Boogie IVL has been designed to be a very low-level modeling language.  It contains support for little more than a typing system, basic arithmetic and boolean expressions \& statements, control flow \& procedure calls, and verification condition specification~\cite{boogie}.  Any more complicated semantics of the source language must be modeled using the basic set of primitives available in Boogie IVL.
 
@@ -27,9 +27,16 @@ Though providing state of the art algorithms for checking concurrnt programs, Co
 
 The behavior prescribed in the pthread specification [cite pthreads specification] is much more complex than these low-level concurrency primitives recognized by Corral.  As a result, to provide support for the more complex pthread API, it is necessary to build a model of the pthread API behavior using the primitives provided by Corral.
 
-[Transition from modeling in Boogie to SMACK]
+[Transition from modeling in Boogie to SMACK][major work needed below this point]
 
-SMACK itself is essentially a compiler that takes C/C++ programs and translates them into BoogiePL (or simply Boogie), an intermediate verification language (IVL)~\cite{smack}.  This converted Boogie code is then consumed by a static analysis tool that evaluates verification conditions present in the original source code.
+Once the behavior of the pthread API has been accurately modeled in Boogie, the front-end [someadjective] component must be extended to translate pthread API calls in the input source into the Boogie IVL model of the pthread calls.
+
+The SMACK project as a whole is an end-to-end C/C++ program verifier.  At its core, the SMACK executable is essentially a compiler that takes C/C++ programs and translates them into Boogie IVL~\cite{smack}.  
+
+
+The SMACK toolchain is depicted in Figure~\ref{fig:SMACKToolchain}.  SMACK as a whole is a front-end for a program verification toolchain that features the Corral program verifier as its core back-end.  Input C/C++ programs are given to Clang to compile and link, resulting in an LLVM bytecode output.  This is then passed to the SMACK executable, which translates the LLVM bytecode into a Boogie program that models the behavior of the input C/C++ program.  The resulting Boogie program is then passed to Corral.  Corral converts the Boogie program into an SMT query, which is given to the Z3 SMT solver for evaluation.
+
+SMACK itself is essentially a compiler that takes C/C++ programs and translates them into Boogie IVL~\cite{smack}.  This converted Boogie code is then consumed by a static analysis tool that evaluates verification conditions present in the original source code.
 
 \begin{figure}[!h]
   \includegraphics[width=1\textwidth]{SmackToolchain.png} 
@@ -37,7 +44,7 @@ SMACK itself is essentially a compiler that takes C/C++ programs and translates 
   \label{fig:SMACKToolchain}
 \end{figure}
 
-The SMACK toolchain is depicted in Figure~\ref{fig:SMACKToolchain}.  SMACK as a whole is a front-end for a program verification toolchain that features the Corral program verifier as its core back-end.  Input C/C++ programs are given to Clang to compile and link, resulting in an LLVM bytecode output.  This is then passed to the SMACK executable, which translates the LLVM bytecode into a Boogie program that models the behavior of the input C/C++ program.  The resulting Boogie program is then passed to Corral.  Corral converts the Boogie program into an SMT query, which is given to the Z3 SMT solver for evaluation.
+
 
 
 %%% Local Variables: 
