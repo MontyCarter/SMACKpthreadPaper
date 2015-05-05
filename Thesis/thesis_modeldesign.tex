@@ -1,16 +1,35 @@
 \chapter{Model Design}\label{ch:modeldesign}
-[This paragraph is very poorly written, and only serves as a general idea of how I'll introduce the chapter]
+[This paragraph is very poorly written, and only serves as a general
+idea of how I'll introduce the chapter]
 
-I'm going to talk about the general concerns and techniques that I've learned for modeling concurrency, using my implementation of pthreads support in SMACK to demonstrate.  To facilitate this, this chapter begins with an introduction to the modeling environment that comprises SMACK.  Having introduced this, the chapter proceeds to discuss the process of modeling concurrency over the lifecycle of a thread of execution.
+I'm going to talk about the general concerns and techniques that I've
+learned for modeling concurrency, using my implementation of pthreads
+support in SMACK to demonstrate.  To facilitate this, this chapter
+begins with an introduction to the modeling environment that comprises
+SMACK.  Having introduced this, the chapter proceeds to discuss the
+process of modeling concurrency over the lifecycle of a thread of
+execution.
+
+Work in a bit about how I will be referring to general threads of
+execution as simply threads. 
 
 \section{Modeling Environment}
 [Again, poorly written - just to organize thoughts]
-As described in Chapter~\ref{ch:background}, SMACK consumes LLVM IR bytecode, builds a model of the input program, and generates a Boogie IVL file.  It turns out that the final pthread implementation is written largely using C code, which then gets converted into the Boogie IVL model of pthreads within each translated input program.
+As described in Chapter~\ref{ch:background}, SMACK consumes LLVM IR
+bytecode, builds a model of the input program, and generates a Boogie
+IVL file.  It turns out that the final pthread implementation is
+written largely using C code, which then gets converted into the
+Boogie IVL model of pthreads within each translated input program.
 
-To ease the discussion of the modeling process, I'll briefly introduce Boogie IVL, the Corral concurrency primitives, as well as some helper functions defined at the C/C++ level that inject Boogie statements into the translated Boogie code.
+To ease the discussion of the modeling process, I'll briefly introduce
+Boogie IVL, the Corral concurrency primitives, as well as some helper
+functions defined at the C/C++ level that inject Boogie statements
+into the translated Boogie code.
 
 \subsection{Boogie IVL}
-The most illustrative way to introduce Boogie IVL may be to show an input C program and the relevant portions of the Boogie output that SMACK returns.
+The most illustrative way to introduce Boogie IVL may be to show an
+input C program and the relevant portions of the Boogie output that
+SMACK returns.
 \begin{figure}[h]
 \centering
 \begin{subfigure}[b]{.45\textwidth}
@@ -49,10 +68,20 @@ procedure main() {
 \caption{C Input to Boogie Code}\label{fig:cToBoogie}
 \end{figure}
 
-Figure~\ref{fig:cToBoogie_b} shows a reduced version of the Boogie code as translated by SMACK from the input source depicted in Figure~\ref{fig:cToBoogie_a}.  Notice that dynamic memory allocation on the heap is modeled with a global array of \lstinline|int|s [fix color here, or don't use lstinline].  Dereferencing pointers simply becomes indexing into the array representing the heap.
+Figure~\ref{fig:cToBoogie_b} shows a reduced version of the Boogie
+code as translated by SMACK from the input source depicted in
+Figure~\ref{fig:cToBoogie_a}.  Notice that dynamic memory allocation
+on the heap is modeled with a global array of \lstinline|int|s [fix
+color here, or don't use lstinline].  Dereferencing pointers simply
+becomes indexing into the array representing the heap. 
 
 \subsection{Corral Concurrency Primitives}\
-Corral is a back-end solver that verifies Boogie IVL programs.  One of Corral's recent development efforts has been to improve support for verifying concurrent programs.  To this end, Corral has extended Boogie IVL, and recognizes five concurrency primitives that are not part of the base language.  These are [choose whether to list here or in background]:
+Corral is a back-end solver that verifies Boogie IVL programs.  One of
+Corral's recent development efforts has been to improve support for
+verifying concurrent programs.  To this end, Corral has extended
+Boogie IVL, and recognizes five concurrency primitives that are not
+part of the base language.  These are [choose whether to list here or
+in background]: 
 
 
 \begin{itemize}
@@ -60,7 +89,8 @@ Corral is a back-end solver that verifies Boogie IVL programs.  One of Corral's 
 \item \lstinline|corral_atomic_begin()| - Begins an atomic block
 \item \lstinline|corral_atomic_end()| - Ends an atomic block
 \item \lstinline|corral_getThreadID()| - Returns the ID of the calling thread.
-\item \lstinline|corral_getChildThreadID()| - Returns the ID of the thread most recently spawned in the calling procedure.
+\item \lstinline|corral_getChildThreadID()| - Returns the ID of the
+  thread most recently spawned in the calling procedure. 
 \end{itemize}
 
 \begin{figure}[h]
@@ -72,11 +102,13 @@ procedure f()
   modifies $x;
 {
   var $tid: int;
+  var $tmp: int;
   call $tid := corral_getThreadID();
   call corral_atomic_begin();
   $x := $tid;
-  assert($x == $tid);
+  $tmp := $x
   call corral_atomic_end();
+  assert($tmp == $tid);
 }
 
 procedure main() {
@@ -95,17 +127,83 @@ procedure main() {
 
 [Fix this god-awful caption]
 
-Figure~\ref{fig:corralprimitives} demonstrates the usage of each of these primitives within the context of a complete Boogie program.
+Figure~\ref{fig:corralprimitives} demonstrates the usage of each of
+these primitives within the context of a complete Boogie program.
+This program initializes the global variable \lstinline|$x| as 0, then
+makes two asynchronous calls to the function \lstinline|f()| and
+records the thread ID of each of the spawned threads of execution.  In
+\lstinline|f()|, each of the spawned threads records their thread IDs.
+Each thread then starts an atomic block, where it stores its thread ID
+to the global \lstinline|$x| and then loads global \lstinline|$x| into
+the local \lstinline|$tmp|.  The \lstinline|assert()| in
+\lstinline|f()| should always succeed, since \lstinline|$x| is stored
+and loaded within an atomic block. 
+
+However, this program contains a bug.  Because there is no barrier
+forcing the parent to wait for the child threads to execute, it is
+possible that \lstinline|$x| won't be set to the thread ID of either
+children by the time \lstinline|assert()| is called in
+\lstinline|main|. 
 
 \subsection{[wc SMACK Boogie Injection]}
+[Maybe these should be introduced inline, when discussing concurrency
+modeling examples that use them] 
 
+To enable end-users to more accurately specify verification conditions
+and program behavior on their own, SMACK has introduced several C
+functions that allow Boogie program semantics to be controlled at the
+C level.  Calls to these functions are intercepted by SMACK, which
+injects the specified semantics in the translated Boogie code, rather
+than simply translating the LLVM IR into Boogie.  Understanding the
+behavior of these functions is needed to... [maybe finish this thought
+- maybe self explanatory...] 
+
+These functions include:
+
+\begin{itemize}
+\item \lstinline|__SMACK_code(char* format, ...)| - Directly injects the Boogie code specified by \lstinline|format|, with ``@'' symbols being replaced by the arguments specified in the parameter list.
+\item \lstinline|__SMACK_decl(char* format, ...)| - 
+\end{itemize}
 
 \section{Thread Creation}
+There are a number of challenging aspects of modeling the thread
+creation process.  It is at this stage that the overall model of
+concurrency must be considered and accounted for.  For example,
+concurrent calls to a driver may be driven by hardware interrupts and
+execute within the kernel, where the process ID is always the same and
+unimportant to the execution of the driver.  Alternatively,
+multi-threaded user-mode programs often assign different tasks to
+threads based on their thread ID, in which case tracking thread IDs
+becomes relevant.  The environment within which concurrent threads of
+execution run must be modeled prior to thread creation to provide the
+framework in which threads will execute [bad sentence, idea is set up
+environment so threads can interact with environment as they run] 
+
+[transition]
+
+[this sentence is bad - it should use hook from last sentence of last
+paragraph]  Within the context of multi-threaded user-mode
+applications, one of the critical tasks is modeling the environment
+that the operating system provides.  For each process, the OS tracks
+the thread ID and thread status of each thread spawned within the
+process.  This information is tracked by the operating system in a
+thread control block (TCB).  At any time, a spawned thread must be
+able to query for its thread ID.  Similarly, a parent thread must be
+able to query the operating system for details on threads it has
+spawned. 
+
+
 
 \section{Locking Primitives}
-These primitives are fairly straightforward, but there are a few gotchas.  The biggest one is [I am so tired and writing so poorly] that support for atomic sections is implemented as one single global lock.  
+These primitives are fairly straightforward, but there are a few
+gotchas.  The biggest one is [I am so tired and writing so poorly]
+that support for atomic sections is implemented as one single global
+lock.   
 
-Of all sections of code enclosed in an atomic begin/end block, only one can be executing at any given time.  This means using the Corral atomic primitives alone, there is no way to create multiple mutual exclusion mechanisms.
+Of all sections of code enclosed in an atomic begin/end block, only
+one can be executing at any given time.  This means using the Corral
+atomic primitives alone, there is no way to create multiple mutual
+exclusion mechanisms. 
 
 \section{[wc Complex] Synchronization}
 
