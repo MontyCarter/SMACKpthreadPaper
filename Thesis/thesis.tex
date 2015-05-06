@@ -134,17 +134,9 @@
     %frame=lines,xleftmargin=8pt,xrightmargin=8pt,basicstyle=\ttfamily,columns=fixed]{#1}
 %}
 
-\usepackage{hyperref}
-\hypersetup{
-    colorlinks,
-    citecolor=black,
-    filecolor=black,
-    linkcolor=black,
-    urlcolor=black
-}
+
 \fourlevels
 \setcounter{tocdepth}{4}
-\addtocontents{toc}{\protect\sloppy}
 
 % INFO
 \title{Modeling Concurrency:\protect\\Extending SMACK to Support Pthreads}
@@ -156,13 +148,27 @@
 \copyrightyear{2015}
 \thesistype{thesis}
 
+
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black,
+    bookmarksopen=true,
+    bookmarksopenlevel=1
+}
+\usepackage{bookmark}
 % DOCUMENT
 \begin{document}
+
 
 % front matter
 \frontmatterformat
 \titlepage
 \preface{thesis_abstract}{Abstract}
+\addtocontents{toc}{\protect\sloppy}
 \tableofcontents
 \listoffigures
 \listoftables
@@ -170,17 +176,41 @@
 
 % body
 \maintext
+%Set chapters down a level for pdf bookmarks
+\makeatletter
+\renewcommand{\toclevel@chapter}{1}
+\renewcommand{\toclevel@section}{2}
+\renewcommand{\toclevel@subsection}{3}
+\renewcommand{\toclevel@subsubsection}{4}
+\renewcommand{\toclevel@paragraph}{5}
+\renewcommand{\toclevel@subparagraph}{6}
+\makeatother
 \include{thesis_intro}
 \include{thesis_relatedwork}
 \include{thesis_background}
 \include{thesis_modeldesign}
 \include{thesis_implementation}
+\include{thesis_evaluation}
+\include{thesis_futurework}
+\include{thesis_conclusion}
 
 % end matter
 \numberofappendices=0
-\appendix
+%\appendix
 %\include{appA}
 
+
+
+%Set chapters back up a level for pdf bookmarks so references isn't in
+%the "Chapters" header
+\makeatletter
+\renewcommand{\toclevel@chapter}{0}
+\renewcommand{\toclevel@section}{1}
+\renewcommand{\toclevel@subsection}{2}
+\renewcommand{\toclevel@subsubsection}{3}
+\renewcommand{\toclevel@paragraph}{4}
+\renewcommand{\toclevel@subparagraph}{5}
+\makeatother
 \nocite{*}
 \bibliographystyle{plain}
 \bibliography{thesis_bib}

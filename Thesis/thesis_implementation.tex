@@ -1,13 +1,31 @@
 \chapter{Implementation}\label{ch:implementation}
+[No good ideas on how to start this chapter...  Note to self - the
+quality of my writing suffers when I get too tired...  Will use
+something simple as a placeholder]
+Having designed the model for the pthread library extension to SMACK,
+[wc it becomes time to] package it up and implement as a new feature
+for SMACK.
+
+In this chapter I provide an overview on the details of implementing
+the new pthread model within SMACK.  [Barf]  
+
+\section{SMACK Modification?}
+[Do a section here on init funcs?]
+
+\section{[wc Include Mechanism]}
+[Describe how pthread.h is included, and preempts normal pthread.h.]
+[Discuss problem with pthreadtypes.h being included by other headers?]
+
+\section{[wc Implemented Functionality]}
+[describe target as most commonly occurring calls in svcomp, inspect,
+civl, benchmarks]
+
+[List implemented function calls]
+
+[List remaining low hanging fruit, also function calls that really
+should be implemented but aren't]
 
 
-\section{Thread Creation}\label{sec_threadcreation}
-talk about thread creation
-
-\section{Locking Primitives}\label{sec_lockingprimitives}
-talk about locking primitives
-
-\section{Thread Termination}\label{sec_threadtermination}
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "thesis"
