@@ -565,6 +565,7 @@ level code simply by using \lstinline|pthread_mutex_t|'s as building
 blocks. 
 
 \section{Thread Termination}
+[Good]
 As a thread's execution comes to an end, there is a bit of bookkeeping
 to be done to wrap up the thread's lifecycle.  It is primarily this
 termination handling that required the upfront work of modeling the
@@ -578,6 +579,7 @@ thread, and retrieving the return value of the terminating thread
 being waited on by the blocking thread.
 
 \subsection{Modeling Thread Exit and Join}
+[Could use another pass or two]
 It is often necessary to pass a return value from a terminating thread
 to some other thread.  For example, with a scatter/gather design
 pattern, a parent thread will send data to multiple worker threads,
@@ -588,7 +590,15 @@ exist somewhere between the time that the terminating thread exits,
 and the joining thread retrieves it.  This functionality was
 implemented by extending the definition of the
 \lstinline|$pthreadStatus| array to store a tuple, rather than a 
-single value.  This can be seen in Figure~\ref{fig:pthread_exit}, 
+single value.  With this, the model can store a return value passed
+into \lstinline|pthread_exit(void* value)| as the second tuple
+element, in addition to storing thread running state as the first.
+
+The model of \lstinline|pthread_exit()|, seen in
+Figure~\ref{fig:pthread_exit}, gets the calling thread's ID and
+ensures the thread is still in a running state, saves the return value
+pointer in \lstinline|$pthreadStatus|, and finally sets the running to
+stopped.  
 
 \begin{figure}[h]
 \centering
@@ -611,6 +621,22 @@ void pthread_exit(void *retval)
 \end{lstlisting}
 \end{figure}
 
+With the return value from threads now stored in
+\lstinline|$pthreadStatus|, a method for accessing this value is
+needed.  This is done through 
+\lstinline|pthread_join(pthread_t* thr)|, which blocks the calling
+thread until the thread referenced  by \lstinline|thr| terminates.
+The value returned from \lstinline|pthread_join()| is the pointer
+passed in to \lstinline|pthread_exit()| by the terminating thread.
+
+The model designed for \lstinline|pthread_join()|, shown in
+Figure~\ref{fig:pthread_join} implements this behavior.  A call to
+\lstinline|assume()| causes the thread to block until the target
+thread's running state is \emph{stopped}.  Once the terminating thread
+is stopped, the waiting thread fetches the return value pointer from
+the \lstinline|$pthreadStatus| array, which is then returned by the
+call to \lstinline|pthread_join()|.
+
 \begin{figure}[h]
 \centering
 \caption{Model: pthread\_join()}\label{fig:pthread_join}
@@ -630,7 +656,10 @@ int pthread_join(pthread_t __th, void **__thread_return)
 \end{lstlisting}
 \end{figure}
 
-[Leftovers]
+
+
+[Editing Leftovers - may be useful during revision, or elsewhere in
+document] 
 [NEW:Modeling thread creation is/was the most difficult portion of
 this project/modeling concurrency.  OLD:There are a number of
 challenging aspects of modeling the thread creation process.]  It is
