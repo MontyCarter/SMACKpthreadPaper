@@ -35,8 +35,10 @@ show an input C program and the relevant portions of the Boogie output
 that SMACK returns.
 \begin{figure}[h]
 \centering
+\caption{SMACK Translation of C Program}\label{fig:cToBoogie}
 \begin{subfigure}[b]{.45\textwidth}
 \centering
+\caption{Input C Code}\label{fig:cToBoogie_a}
 \begin{lstlisting}
 
 
@@ -49,11 +51,11 @@ void main() {
   assert(*x == 1);
 }
 \end{lstlisting}
-\caption{Input C Code}\label{fig:cToBoogie_a}
 \end{subfigure}
 ~
 \begin{subfigure}[b]{.45\textwidth}
 \centering
+\caption{Boogie Code from SMACK}\label{fig:cToBoogie_b}
 \begin{lstlisting}[language=boogie]
 var $M: [int]int;
 
@@ -66,9 +68,7 @@ procedure main() {
   assert($M[$x] == 1);
 }
 \end{lstlisting}
-\caption{Boogie Code from SMACK}\label{fig:cToBoogie_b}
 \end{subfigure}
-\caption{C Input to Boogie Code}\label{fig:cToBoogie}
 \end{figure}
 
 Figure~\ref{fig:cToBoogie_b} shows a reduced version of the Boogie
@@ -98,6 +98,8 @@ in background]:
 
 \begin{figure}[h]
 \centering
+\caption{Corral Concurrency Primitives in Action}
+\label{fig:corralprimitives}
 \begin{lstlisting}[language=boogie]
 var $x: int;
 
@@ -124,8 +126,6 @@ procedure main() {
   assert($x == $ch1 || $x == $ch2);
 }
 \end{lstlisting}
-\caption{Corral Concurrency Primitives in Action}
-\label{fig:corralprimitives}
 \end{figure}
 
 Figure~\ref{fig:corralprimitives} demonstrates the usage of each of
@@ -184,8 +184,10 @@ important for the pthread extension to SMACK.
 
 \begin{figure}[h]
 \centering
+\caption{Injecting Boogie Code from C}\label{fig:cinjToBoogie}
 \begin{subfigure}[b]{1\textwidth}
 \centering
+\caption{Boogie Injecting C Code}\label{fig:cinjToBoogie_a}
 \begin{lstlisting}
 void main() {
   __SMACK_top_decl("var $globalVar: int;");
@@ -197,11 +199,11 @@ void main() {
   assert(*x == 2);
 }
 \end{lstlisting}
-\caption{Boogie Injecting C Code}\label{fig:cinjToBoogie_a}
 \end{subfigure}
 ~
 \begin{subfigure}[b]{1\textwidth}
 \centering
+\caption{Injected Boogie Translation}\label{fig:cinjToBoogie_b}
 \begin{lstlisting}[language=boogie]
 var $globalVar: int;
 var $M: [int]int;
@@ -215,76 +217,88 @@ procedure main() {
   assert($M[$x] == 2);
 }
 \end{lstlisting}
-\caption{Injected Boogie Translation}\label{fig:cinjToBoogie_b}
 \end{subfigure}
-\caption{Injecting Boogie Code from C}\label{fig:cinjToBoogie}
 \end{figure}
 
 Input to both of these functions is similar to that of C's
-\lstinline|printf()| function.  ``@'' symbols in the
+\lstinline|printf()| function; ``@'' symbols in the
 \lstinline|format| string are replaced by arguments from the list
 ``...''.  Figure~\ref{fig:cinjToBoogie} demonstrates the C level usage,
 and Boogie level translations of both of these functions.
 
+My implementation of pthread support for SMACK performs modeling
+exclusively at the C code level, using these Boogie injection
+functions to model environmental state where necessary.
+
 \section{Thread Creation}
-[NEW:Modeling thread creation is/was the most difficult portion of
-this project/modeling concurrency.  OLD:There are a number of
-challenging aspects of modeling the thread creation process.]  It is
-at this stage that the overall model of 
-concurrency must be considered and accounted for.  For example,
-concurrent calls to a driver may be driven by hardware interrupts and
-execute within the kernel, where the process ID is always the same and
-unimportant to the execution of the driver.  Alternatively,
-multi-threaded user-mode programs often assign different tasks to
-threads based on their thread ID, in which case tracking thread IDs
-becomes relevant.  The environment within which concurrent threads of
-execution run must be modeled prior to thread creation to provide the
-framework in which threads will execute [bad sentence, idea is set up
-environment so threads can interact with environment as they run] 
+[Good]
+One of the critical tasks in implementing support for pthreads in
+SMACK was modeling the environment that the operating system provides.
+For each thread, the OS tracks the thread ID and thread status of
+each thread spawned within a process.  This information is tracked by
+the operating system in a thread control block (TCB).  At any time, a
+thread must be able to query for its thread ID.  Similarly, a 
+parent thread must be able to query the operating system for the
+running state threads it has spawned.
 
-[transition]
-
-[this sentence is bad - it should use hook from last sentence of last
-paragraph]  Within the context of multi-threaded user-mode
-applications, one of the critical tasks is modeling the environment
-that the operating system provides.  For each process, the OS tracks
-the thread ID and thread status of each thread spawned within the
-process.  This information is tracked by the operating system in a
-thread control block (TCB).  At any time, a spawned thread must be
-able to query for its thread ID.  Similarly, a parent thread must be
-able to query the operating system for the running state threads it
-has spawned. 
+This section discusses the challenges of modeling the environment
+presented by the operating system to the pthread library, followed by
+a description of the model created to implement pthread creation
+within SMACK.
 
 \subsection{Modeling the Environment}
-[Section seems organizationally good]
-To achieve this goal of modeling the environment provided by the
-operating system, there are a number of bookkeeping issues that must
-be addressed.  These include tracking the running state of each
-thread, and coordinating the thread ID between the C level code and
-Corral itself.  The critical issue can be illustrated by considering
-the API call \lstinline|pthread_join(pthread_t* thr)|. This call
-blocks the calling thread until the thread specified by
-\lstinline|thr| is in the stopped state.  Consequently, to properly
-model this function, the calling thread must be able to query the
-environment for the status of the thread referenced by \lstinline|thr|
-in order to allow the calling thread to unblock execution.  
+[Good]
+Faithfully modeling the environment seen by the pthread library
+requires addressing a number of bookkeeping issues.  These include
+tracking the running state of each thread, and coordinating the thread
+ID between the C level code and Corral itself.  The critical issue can
+be illustrated by considering the API call
+\lstinline|pthread_join(pthread_t* thr)|. This call blocks the calling
+thread until the thread specified by \lstinline|thr| is in the stopped
+state.  Consequently, properly model this function requires that the
+calling thread must be able to query the environment for the status of
+the thread referenced by \lstinline|thr|, in order to allow the
+calling thread to unblock execution. 
 
 Within the context of static model checking, because no code is
 actually executing, the running state of a thread is simply a bit of
-program state - a thread can be marked as waiting, running, or
-stopped. Thus, tracking thread states requires the ability to
-reference some bit of information about the threads. A
+program state information - a thread can be marked as waiting,
+running, or stopped. Thus, tracking thread states requires the ability
+to reference some bit of state information about the threads. A
 \lstinline|pthread_t| object passed into \lstinline|pthread_join()|,
 for example, must have some method of referencing this bit of thread
 state information.  It seems natural to store each thread's thread ID
 in this \lstinline|pthread_t| object, and use this to look up the
 thread's state in an array.  Indeed, this is precisely how the
 operating system tracks such information.  In addition, such an array
-must be globally accessible, because threads must be able to query
-the state of another thread (to facilitate \lstinline|pthread_t|, for
+must be globally accessible, because threads must be able to query the
+state of another thread (to singal \lstinline|pthread_join()|, for
 example).  To model this, a global Boogie-level array called
 \lstinline|$pthreadStatus| is added to the translated Boogie model of
-input pthread programs.
+input pthread programs, as illustrated in
+Figure~\ref{fig:pthreadStatusDecl}.
+
+[Figure out better typesetting of these small guys]
+\begin{figure}[h]
+\centering
+\caption{Declaring Global \$pthreadStatus}\label{fig:pthreadStatusDecl}
+\begin{subfigure}[b]{1\textwidth}
+\centering
+\caption{C Declaration of \$pthreadStatus}\label{fig:pthreadStatusDecl_a}
+\begin{lstlisting}
+__SMACK_top_decl("var $pthreadStatus: [int][int]int;";)
+\end{lstlisting}
+\end{subfigure}
+~
+\begin{subfigure}[b]{1\textwidth}
+\centering
+\caption{Boogie Translation (as Global Declaration)}
+\label{fig:pthreadStatusDecl_b}
+\begin{lstlisting}[language=boogie]
+var $pthreadStatus: [int][int]int;
+\end{lstlisting}
+\end{subfigure}
+\end{figure}
 
 In order to access thread state from \lstinline|$pthreadStatus|, a
 queried thread's thread ID is used to index into the array.  This
@@ -302,20 +316,135 @@ However, there is further complication with implementing this
 array. In Boogie, undefined variables take on a nondeterministic value
 - that is, Corral assumes they can have any value.  Without
 initializing \lstinline|$pthreadStatus|, Corral must consider the case
-that threads start in a stopped state.  This means that a call to
-\lstinline|pthread_join()| immediately following a call to
+that threads start in a \emph{stopped} state.  This means that a call
+to \lstinline|pthread_join()| immediately following a call to
 \lstinline|pthread_create()| could query for the status of the newly
 spawned thread before the new thread has initially set its status to
 waiting, and see it is in the stopped state, causing the parent thread
 to unblock.  To address this, \lstinline|$pthreadStatus| is
-initialized so that all indices indicate an \emph{initialized} state.
+initialized so that all indices indicate an \emph{uninitialized} state,
+as illustrated in Figure~\ref{fig:pthreadStatusInit}.  This code gets
+executed as the first statement in \lstinline|main()|, to ensure that
+any thread's running state is defined prior to its use.
+
+\begin{figure}[h]
+\centering
+\caption{Initializing Global \$pthreadStatus}\label{fig:pthreadStatusInit}
+\begin{subfigure}[b]{1\textwidth}
+\centering
+\caption{C Initialization of \$pthreadStatus}\label{fig:pthreadStatusInit_a}
+\begin{lstlisting}
+__SMACK_code("assume (forall i:int :: "
+                             "$pthreadStatus[i][0] == "
+                             "$pthread_uninitialized);"); 
+\end{lstlisting}
+\end{subfigure}
+~
+\begin{subfigure}[b]{1\textwidth}
+\centering
+\caption{Boogie Translation}\label{fig:pthreadStatusInit_b}
+\begin{lstlisting}[language=boogie]
+assume (forall i:int :: $pthreadStatus[i][0] == 
+                        $pthread_uninitialized);
+\end{lstlisting}
+\end{subfigure}
+\end{figure}
 
 With these Boogie level additions to each pthread program's Boogie
-translation, the operating system environment is model any behavior
-implemented in the pthread library.
+translation, the operating system environment is sufficiently prepared
+to enable the modeling of the actual pthread library behavior.
 
-\subsection{pthread\_create()}
-Once the OS environment has been modeled, 
+\subsection{Modeling Thread Creation}
+Modeling actual pthread library function call behavior is unlocked
+once the OS environment has been modeled.  In the pthread library, the
+procedure for spawning threads is \lstinline|pthread_create()|.  There
+are two aspects of \lstinline|pthread_create()| that require modeling:
+behavior in the calling thread, and behavior in the newly spawned
+thread.
+
+In the calling thread, there are two main tasks.  For the first task,
+the new thread must be spawned, and instructed to execute the
+procedure indicated by the \lstinline|*__start_routine| function
+pointer.  For the second, SMACK must query Corral for the thread ID of
+the newly spawned child thread, and record this value in the
+\lstinline|pthread_t| struct for future reference.  This results in
+the model defined in the C code seen in Figure~\ref{fig:pthread_create}.
+
+\begin{figure}[h]
+\centering
+\caption{Model: pthread\_create()}\label{fig:pthread_create}
+\begin{lstlisting}
+int pthread_create(pthread_t* __newthread,
+                   pthread_attr_t* __attr,
+                   void* (*__start_routine) (void *),
+                   void* __arg)
+{
+  __SMACK_code("async call @(@, @, @);", __call_wrapper,
+                                         __newthread,
+                                         __start_routine,
+                                         __arg);
+
+  __SMACK_code("call @ := corral_getChildThreadID();",
+               *__newthread);
+
+  return 0;
+}
+\end{lstlisting}
+\end{figure}
+
+In the newly spawned thread, again there is bookkeeping to do, as well
+as executing the specified \lstinline|__start_routine()|.  Notice in
+Figure~\ref{fig:pthread_create} that the function
+\lstinline|__call_wrapper()| is the procedure being executed
+asynchronously, rather than \lstinline|__start_routine()|.  This
+allows for the child thread to perform bookkeeping before and after
+calling \lstinline|__start_routine()|.
+
+As seen in Figure~\ref{fig:__call_wrapper} the newly spawned thread
+queries Corral for its thread ID, and then makes a call to
+\lstinline|assume()|, which causes the new thread to wait until its
+parent has set the child thread's ID in \lstinline|*__newthread|. Once
+this has occurred, both the parent and the child have a reference to
+the newly spawned thread's ID, and can use this to index into
+\lstinline|$pthreadStatus| to set and query the child thread's running
+state information. 
+
+Once the child and parent can both reference the correct
+\lstinline|$pthreadStatus| element, the new thread can proceed to
+executing the specified \lstinline|__start_routine()|.  The new thread
+cycles through the \emph{waiting} state to the \emph{running} state,
+and then makes a synchronous call to the
+\lstinline|__start_routine()|.  After the
+\lstinline|__start_routine()| returns, the thread's running state is
+finally set to \emph{stopped}, which signals the end of the child
+thread. 
+
+\begin{figure}[h]
+\centering
+\caption{Model: \_\_call\_wrapper()}\label{fig:__call_wrapper}
+\begin{lstlisting}
+void __call_wrapper(pthread_t* __newthread,
+                    void* (*__start_routine)(void *),
+                    void* __arg)
+{
+  int ctid = __SMACK_nondet();
+  __SMACK_code("call @ := corral_getThreadID();", ctid);
+  assume(ctid == *__newthread);
+  
+  __SMACK_code("$pthreadStatus[@][0] := $pthread_waiting;",
+               *__newthread);
+  __SMACK_code("$pthreadStatus[@][0] := $pthread_running;",
+               *__newthread);
+
+  __start_routine(__arg);
+
+  __SMACK_code("$pthreadStatus[@][0] := $pthread_stopped;",
+               *__newthread);
+}
+\end{lstlisting}
+\end{figure}
+
+
 
 \section{Locking Primitives}
 These primitives are fairly straightforward, but there are a few
@@ -331,6 +460,25 @@ exclusion mechanisms.
 \section{[wc Complex] Synchronization}
 
 \section{Thread Termination}
+
+[Leftovers]
+[NEW:Modeling thread creation is/was the most difficult portion of
+this project/modeling concurrency.  OLD:There are a number of
+challenging aspects of modeling the thread creation process.]  It is
+at this stage that the overall model of 
+concurrency must be considered and accounted for.  For example,
+concurrent calls to a driver may be driven by hardware interrupts and
+execute within the kernel, where the process ID is always the same and
+unimportant to the execution of the driver.  Alternatively,
+multi-threaded user-mode programs often assign different tasks to
+threads based on their thread ID, in which case tracking thread IDs
+becomes relevant.  The environment within which concurrent threads of
+execution run must be modeled prior to thread creation to provide the
+framework in which threads will execute [bad sentence, idea is set up
+environment so threads can interact with environment as they run] 
+
+[transition]
+
 
 %%% Local Variables: 
 %%% mode: latex
