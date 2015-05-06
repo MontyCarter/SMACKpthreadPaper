@@ -88,11 +88,14 @@ part of the base language.  These are [choose whether to list here or
 in background]: 
 
 \begin{itemize}
-\item \lstinline|async call| \emph{func}\lstinline|(|\emph{...}\lstinline|)| - Asynchronously calls \emph{func} with the parameter list \emph{'...'}
-\item \lstinline|corral_atomic_begin()| - Begins an atomic block
-\item \lstinline|corral_atomic_end()| - Ends an atomic block
-\item \lstinline|corral_getThreadID()| - Returns the ID of the calling thread.
-\item \lstinline|corral_getChildThreadID()| - Returns the ID of the
+\item \lstinline|async call|
+  \emph{func}\lstinline|(|\emph{...}\lstinline|)| -- Asynchronously
+  calls \emph{func} with the parameter list \emph{'...'} 
+\item \lstinline|corral_atomic_begin()| -- Begins an atomic block
+\item \lstinline|corral_atomic_end()| -- Ends an atomic block
+\item \lstinline|corral_getThreadID()| -- Returns the ID of the
+  calling thread.
+\item \lstinline|corral_getChildThreadID()| -- Returns the ID of the
   thread most recently spawned in the calling procedure. 
 \end{itemize}
 
@@ -176,10 +179,10 @@ important for the pthread extension to SMACK.
 
 
 \begin{itemize}
-\item \lstinline|__SMACK_code(char* format, ...)| - Injects the string
-  \lstinline|format| in the Boogie code.
-\item \lstinline|__SMACK_top_decl(char* format, ...)| - Inserts the
-  string \lstinline|format| as a global declaration
+\item \lstinline|__SMACK_code(char* format, ...)| -- Injects the
+  string \lstinline|format| in the Boogie code.
+\item \lstinline|__SMACK_top_decl(char* format, ...)| -- Inserts the
+  string \lstinline|format| as a global declaration 
 \end{itemize}
 
 \begin{figure}[h]
@@ -262,7 +265,7 @@ calling thread to unblock execution.
 
 Within the context of static model checking, because no code is
 actually executing, the running state of a thread is simply a bit of
-program state information - a thread can be marked as waiting,
+program state information -- a thread can be marked as waiting,
 running, or stopped. Thus, tracking thread states requires the ability
 to reference some bit of state information about the threads. A
 \lstinline|pthread_t| object passed into \lstinline|pthread_join()|,
@@ -355,6 +358,7 @@ translation, the operating system environment is sufficiently prepared
 to enable the modeling of the actual pthread library behavior.
 
 \subsection{Modeling Thread Creation}
+[Good]
 Modeling actual pthread library function call behavior is unlocked
 once the OS environment has been modeled.  In the pthread library, the
 procedure for spawning threads is \lstinline|pthread_create()|.  There
@@ -402,12 +406,14 @@ calling \lstinline|__start_routine()|.
 
 As seen in Figure~\ref{fig:__call_wrapper} the newly spawned thread
 queries Corral for its thread ID, and then makes a call to
-\lstinline|assume()|, which causes the new thread to wait until its
-parent has set the child thread's ID in \lstinline|*__newthread|. Once
-this has occurred, both the parent and the child have a reference to
-the newly spawned thread's ID, and can use this to index into
-\lstinline|$pthreadStatus| to set and query the child thread's running
-state information. 
+\lstinline|assume()|, which causes Corral to only consider paths
+through the program where \lstinline|*__newthread| already contains
+the thread ID of the child thread -- effectively, the new thread
+``waits'' until its parent has set the child thread's ID in
+\lstinline|*__newthread|. Once this has occurred, both the parent and
+the child have a reference to the newly spawned thread's ID, and can
+use this to index into \lstinline|$pthreadStatus| to set and query the
+child thread's running state information.  
 
 Once the child and parent can both reference the correct
 \lstinline|$pthreadStatus| element, the new thread can proceed to
@@ -446,20 +452,183 @@ void __call_wrapper(pthread_t* __newthread,
 
 
 
-\section{Locking Primitives}
-These primitives are fairly straightforward, but there are a few
-gotchas.  The biggest one is [I am so tired and writing so poorly]
-that support for atomic sections is implemented as one single global
-lock.   
+\section{Thread Execution}
+[Good]
+With the ability to spawn threads, [wc it becomes time to] consider
+the functionality of the pthread library that pertains to an executing
+thread.  Among this functionality, the most commonly utilized are the
+synchronization routines.
 
-Of all sections of code enclosed in an atomic begin/end block, only
-one can be executing at any given time.  This means using the Corral
-atomic primitives alone, there is no way to create multiple mutual
-exclusion mechanisms. 
+Corral extends Boogie IVL with two primitives for achieving
+synchronization between threads: \lstinline|corral_atomic_begin()| and
+\lstinline|corral_atomic_end()|.  These calls provide the ability to
+create critical sections of Boogie IVL code, where only one atomic
+block can execute at any time.  However, these atomic blocks are
+global, and take no parameters.  There is no way to differentiate
+atomic blocks of unrelated code that should be allowed to run
+concurrently -- this is much like the big kernel lock in Linux.  This
+presents the need to model the more complex synchronization routines
+of pthreads using Corral's atomic primitives.
 
-\section{[wc Complex] Synchronization}
+\subsection{Modeling Mutexes}
+[Good]
+Mutexes are the most commonly used mechanisms for providing
+synchronization among threads.  In addition, they can be used as
+building blocks to devise more complex synchronization mechanisms.
+Modeling mutexes in Corral is relatively straightforward, and more
+complex synchronization functionality easily builds on this
+foundation. 
+
+Each \lstinline|pthread_mutex_t| object allocated creates an
+independent mutual exclusion device.  To track the current owner of a
+mutex and prevent execution of threads that don't hold the lock, the
+model stores the thread ID of the current mutex owner in the
+\lstinline|pthread_mutex_t| struct.  This allows
+\lstinline|pthread_mutex_lock()| to block until until the mutex is in
+the \emph{UNLOCKED} state.
+
+This leads to the straightforward model shown in
+Figure~\ref{fig:pthread_mutex_lock}. The calling thread queries for
+its thread ID using \lstinline|pthread_self()| (which simply queries
+Corral with a call to \lstinline|corral_GetThreadID()|, and returns the
+result). The mutex is then checked to ensure it is in the initial
+state, and that the calling thread is not already the owner of the
+mutex.  With these criteria ensured, the Boogie translation atomically
+waits for the mutex to enter the \emph{UNLOCKED} state and updates the
+mutex owner to be the calling thread's ID.
+
+\begin{figure}[h]
+\centering
+\caption{Model: pthread\_mutex\_lock()}\label{fig:pthread_mutex_lock}
+\begin{lstlisting}
+int pthread_mutex_lock(pthread_mutex_t* __mutex)
+{
+  int tid = (int)pthread_self();
+  assert(__mutex->init == INITIALIZED);
+  assert(__mutex->lock != tid);
+
+  __SMACK_code("call corral_atomic_begin();");
+  assume(__mutex->lock == UNLOCKED);
+  __mutex->lock = tid;
+  __SMACK_code("call corral_atomic_end();");
+
+  return 0;
+}
+\end{lstlisting}
+\end{figure}
+
+\lstinline|pthread_mutex_unlock()|, seen in
+Figure~\ref{fig:pthread_mutex_unlock}, releases a mutex, and is
+essentially the inverse of \lstinline|pthread_mutex_lock()|; the model
+ensures the mutex is initialized and the calling thread is the current
+owner, and atomically sets the mutex as being unlocked. 
+
+\begin{figure}[h]
+\centering
+\caption{Model: pthread\_mutex\_unlock()}
+\label{fig:pthread_mutex_unlock}
+\begin{lstlisting}
+int pthread_mutex_unlock(pthread_mutex_t* __mutex)
+{
+  int tid = (int)pthread_self();
+  assert(__mutex->init == INITIALIZED);
+  assert(__mutex->lock == tid);
+
+  __SMACK_code("call corral_atomic_begin();");
+  __mutex->lock = UNLOCKED;
+  __SMACK_code("call corral_atomic_end();");
+
+  return 0;
+}
+\end{lstlisting}
+\end{figure}
+
+\subsection{Complex Synchronization}
+[Short, but sufficient?]
+The pthread library also includes a number of more complex
+synchronization mechanisms.  These allow for more efficient runtime
+behavior, in addition to providing commonly utilized synchronization
+mechanisms.
+
+\lstinline|pthread_cond_wait(pthread_cond_t* cond, |
+\lstinline|pthread_mutex_t* mutex)|  is one such function that
+provides more efficient runtime behavior.  It blocks the calling
+thread until both the \lstinline|cond| predicate is true \emph{and}
+\lstinline|mutex| is \emph{UNLOCKED}, at which point the thread is
+signaled to resume. This avoids having to continually acquire the
+mutex and evaluate the predicate.  \lstinline|pthread_barrier_wait()|
+is a good example of a procedure providing expected functionality.  It
+causes calling threads to block until all threads calling
+\lstinline|pthread_barrier_wait()| have reached this instruction.
+These more complex synchronization routines are modeled entirely as C
+level code simply by using \lstinline|pthread_mutex_t|'s as building
+blocks. 
 
 \section{Thread Termination}
+As a thread's execution comes to an end, there is a bit of bookkeeping
+to be done to wrap up the thread's lifecycle.  It is primarily this
+termination handling that required the upfront work of modeling the
+operating system environment prior to implementing support for thread
+creation.
+
+There are two main considerations for handling the termination of a
+thread.  The first consideration is the passing of a return value from
+a terminating thread.  The second is blocking execution of a waiting
+thread, and retrieving the return value of the terminating thread
+being waited on by the blocking thread.
+
+\subsection{Modeling Thread Exit and Join}
+It is often necessary to pass a return value from a terminating thread
+to some other thread.  For example, with a scatter/gather design
+pattern, a parent thread will send data to multiple worker threads,
+which return a computational result back to the parent.
+
+The challenge with achieving this was that this return data has to
+exist somewhere between the time that the terminating thread exits,
+and the joining thread retrieves it.  This functionality was
+implemented by extending the definition of the
+\lstinline|$pthreadStatus| array to store a tuple, rather than a 
+single value.  This can be seen in Figure~\ref{fig:pthread_exit}, 
+
+\begin{figure}[h]
+\centering
+\caption{Model: pthread\_exit()}\label{fig:pthread_exit}
+\begin{lstlisting}
+void pthread_exit(void *retval)
+{
+  pthread_t tid = __SMACK_nondet();
+  tid = pthread_self();
+
+  __SMACK_code("assert $pthreadStatus[@][0] == "
+               "$pthread_running;",
+               tid);
+
+  __SMACK_code("$pthreadStatus[@][1] := @;", tid, retval);
+
+  __SMACK_code("$pthreadStatus[@][0] := $pthread_stopped;",
+               tid);
+}
+\end{lstlisting}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\caption{Model: pthread\_join()}\label{fig:pthread_join}
+\begin{lstlisting}
+int pthread_join(pthread_t __th, void **__thread_return)
+{
+  __SMACK_code("assume $pthreadStatus[@][0] == "
+               "$pthread_stopped;",
+               __th);
+
+  __SMACK_code("@ := $pthreadStatus[@][1];",
+               *__thread_return, __th);
+
+  return 0;
+}
+
+\end{lstlisting}
+\end{figure}
 
 [Leftovers]
 [NEW:Modeling thread creation is/was the most difficult portion of
