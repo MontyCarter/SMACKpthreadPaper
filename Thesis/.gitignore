@@ -4,4 +4,8 @@
 *.bbl
 *.dvi
 *.aux
+*.lof
+*.lot
+*.toc
+*.pdf
 auto/
