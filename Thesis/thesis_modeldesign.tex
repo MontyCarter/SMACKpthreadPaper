@@ -1,13 +1,12 @@
 \chapter{Model Design}\label{ch:modeldesign}
-[Redesign after moving modeling framework]
 In this chapter, I discuss my research efforts toward developing a
-model of the pthread library in SMACK.  I begin by introducing details
-of the modeling framework used to create the pthread library model.
-Having introduced this, I proceed to discuss the process of modeling
-concurrency in the pthread library over the lifecycle of a pthread.
+model of the pthread library in SMACK.  I begin by introducing the
+challenge of modeling the execution environment presented by the
+operating system to the pthread library.  Having introduced this, I
+proceed to discuss the process of modeling concurrency in the pthread
+library over the lifecycle of a pthread.
 
-\section{Thread Creation}
-[Intro feels bare with modeling framework moved]
+\section{Execution Environment}
 One of the critical tasks in implementing support for pthreads in
 SMACK was modeling the environment that the operating system provides.
 For each thread, the OS tracks the thread ID and thread status of
@@ -17,13 +16,6 @@ thread must be able to query for its thread ID.  Similarly, a
 parent thread must be able to query the operating system for the
 running state threads it has spawned.
 
-This section discusses the challenges of modeling the environment
-presented by the operating system to the pthread library, followed by
-a description of the model created to implement pthread creation
-within SMACK.
-
-\subsection{Modeling the Execution Environment}
-[Good]
 Faithfully modeling the environment seen by the pthread library
 requires addressing a number of bookkeeping issues.  These include
 tracking the running state of each thread, and coordinating the thread
@@ -49,32 +41,20 @@ thread's state in an array.  Indeed, this is precisely how the
 operating system tracks such information.  In addition, such an array
 must be globally accessible, because threads must be able to query the
 state of another thread (to singal \lstinline|pthread_join()|, for
-example).  To model this, a global Boogie-level array called
-\lstinline|$pthreadStatus| is added to the translated Boogie model of
-input pthread programs, as illustrated in
-Figure~\ref{fig:pthreadStatusDecl}.
+example).  To model this, C level code is used to inject a global
+Boogie-level array called \lstinline|$pthreadStatus|; the C level call
 
-[Figure out better typesetting of these small guys]
-\begin{figure}[h]
-\centering
-\caption{Declaring Global \$pthreadStatus}\label{fig:pthreadStatusDecl}
-\begin{subfigure}[b]{1\textwidth}
-\centering
-\caption{C Declaration of \$pthreadStatus}\label{fig:pthreadStatusDecl_a}
-\begin{lstlisting}
-__SMACK_top_decl("var $pthreadStatus: [int][int]int;";)
+\begin{lstlisting}[frame=none,xleftmargin=2\parindent]
+__SMACK_top_decl("var $pthreadStatus: [int][int]int;");
 \end{lstlisting}
-\end{subfigure}
-~
-\begin{subfigure}[b]{1\textwidth}
-\centering
-\caption{Boogie Translation (as Global Declaration)}
-\label{fig:pthreadStatusDecl_b}
-\begin{lstlisting}[language=boogie]
+
+\noindent becomes
+
+\begin{lstlisting}[frame=none,xleftmargin=2\parindent,language=boogie]
 var $pthreadStatus: [int][int]int;
 \end{lstlisting}
-\end{subfigure}
-\end{figure}
+
+\noindent in the output Boogie program.
 
 In order to access thread state from \lstinline|$pthreadStatus|, a
 queried thread's thread ID is used to index into the array.  This
@@ -98,51 +78,44 @@ to \lstinline|pthread_join()| immediately following a call to
 spawned thread before the new thread has initially set its status to
 waiting, and see it is in the stopped state, causing the parent thread
 to unblock.  To address this, \lstinline|$pthreadStatus| is
-initialized so that all indices indicate an \emph{uninitialized} state,
-as illustrated in Figure~\ref{fig:pthreadStatusInit}.  This code gets
-executed as the first statement in \lstinline|main()|, to ensure that
-any thread's running state is defined prior to its use.
+initialized so that all indices indicate an \emph{uninitialized}
+state; the C level call 
 
-\begin{figure}[h]
-\centering
-\caption{Initializing Global \$pthreadStatus}\label{fig:pthreadStatusInit}
-\begin{subfigure}[b]{1\textwidth}
-\centering
-\caption{C Initialization of \$pthreadStatus}\label{fig:pthreadStatusInit_a}
-\begin{lstlisting}
+\begin{lstlisting}[frame=none,xleftmargin=2\parindent]
 __SMACK_code("assume (forall i:int :: "
                              "$pthreadStatus[i][0] == "
                              "$pthread_uninitialized);"); 
 \end{lstlisting}
-\end{subfigure}
-~
-\begin{subfigure}[b]{1\textwidth}
-\centering
-\caption{Boogie Translation}\label{fig:pthreadStatusInit_b}
-\begin{lstlisting}[language=boogie]
+
+\noindent becomes 
+
+\begin{lstlisting}[frame=none,xleftmargin=2\parindent,language=boogie]
 assume (forall i:int :: $pthreadStatus[i][0] == 
                         $pthread_uninitialized);
 \end{lstlisting}
-\end{subfigure}
-\end{figure}
+
+\noindent in the output Boogie program.  This code gets executed as
+the first statement in \lstinline|main()|, to ensure that any thread's
+running state is defined prior to its use. 
 
 With these Boogie level additions to each pthread program's Boogie
 translation, the operating system environment is sufficiently prepared
 to enable the modeling of the actual pthread library behavior.
 
-\subsection{Modeling Thread Creation}
-[Good]
-Modeling actual pthread library function call behavior is unlocked
-once the OS environment has been modeled.  In the pthread library, the
-procedure for spawning threads is \lstinline|pthread_create()|.  There
-are two aspects of \lstinline|pthread_create()| that require modeling:
-behavior in the calling thread, and behavior in the newly spawned
-thread.
 
-In the calling thread, there are two main tasks.  For the first task,
+\section{Thread Creation}
+With the pthread library's execution environment modeled, a sufficient
+framework exists to begin modeling the behavior of the actual pthread
+library function calls.  In the pthread library, the procedure for
+spawning threads is \lstinline|pthread_create()|.  There are two
+aspects of \lstinline|pthread_create()| that require modeling:
+behavior in the calling thread, and behavior in the newly spawned
+thread. 
+
+In the calling thread, there are two main tasks.  As the first task,
 the new thread must be spawned, and instructed to execute the
 procedure indicated by the \lstinline|*__start_routine| function
-pointer.  For the second, SMACK must query Corral for the thread ID of
+pointer.  As the second, SMACK must query Corral for the thread ID of
 the newly spawned child thread, and record this value in the
 \lstinline|pthread_t| struct for future reference.  This results in
 the model defined in the C code seen in Figure~\ref{fig:pthread_create}.
@@ -260,15 +233,6 @@ model stores the thread ID of the current mutex owner in the
 \lstinline|pthread_mutex_lock()| to block until until the mutex is in
 the \emph{UNLOCKED} state.
 
-This leads to the straightforward model shown in
-Figure~\ref{fig:pthread_mutex_lock}. The calling thread queries for
-its thread ID using \lstinline|pthread_self()| (which simply queries
-Corral with a call to \lstinline|corral_GetThreadID()|, and returns the
-result). The mutex is then checked to ensure it is in the initial
-state, and that the calling thread is not already the owner of the
-mutex.  With these criteria ensured, the Boogie translation atomically
-waits for the mutex to enter the \emph{UNLOCKED} state and updates the
-mutex owner to be the calling thread's ID.
 
 \begin{figure}[h]
 \centering
@@ -289,6 +253,16 @@ int pthread_mutex_lock(pthread_mutex_t* __mutex)
 }
 \end{lstlisting}
 \end{figure}
+
+This leads to the straightforward model shown in
+Figure~\ref{fig:pthread_mutex_lock}. The calling thread queries for
+its thread ID using \lstinline|pthread_self()| (which simply queries
+Corral with a call to \lstinline|corral_GetThreadID()|, and returns the
+result). The mutex is then checked to ensure it is in the initial
+state, and that the calling thread is not already the owner of the
+mutex.  With these criteria ensured, the Boogie translation atomically
+waits for the mutex to enter the \emph{UNLOCKED} state and updates the
+mutex owner to be the calling thread's ID.
 
 \lstinline|pthread_mutex_unlock()|, seen in
 Figure~\ref{fig:pthread_mutex_unlock}, releases a mutex, and is
@@ -367,12 +341,6 @@ single value.  With this, the model can store a return value passed
 into \lstinline|pthread_exit(void* value)| as the second tuple
 element, in addition to storing thread running state as the first.
 
-The model of \lstinline|pthread_exit()|, seen in
-Figure~\ref{fig:pthread_exit}, gets the calling thread's ID and
-ensures the thread is still in a running state, saves the return value
-pointer in \lstinline|$pthreadStatus|, and finally sets the running to
-stopped.  
-
 \begin{figure}[h]
 \centering
 \caption{Model: pthread\_exit()}\label{fig:pthread_exit}
@@ -393,6 +361,13 @@ void pthread_exit(void *retval)
 }
 \end{lstlisting}
 \end{figure}
+
+The model of \lstinline|pthread_exit()|, seen in
+Figure~\ref{fig:pthread_exit}, gets the calling thread's ID and
+ensures the thread is still in a running state, saves the return value
+pointer in \lstinline|$pthreadStatus|, and finally sets the running to
+stopped.  
+
 
 With the return value from threads now stored in
 \lstinline|$pthreadStatus|, a method for accessing this value is
@@ -428,27 +403,6 @@ int pthread_join(pthread_t __th, void **__thread_return)
 
 \end{lstlisting}
 \end{figure}
-
-
-[Editing Leftovers - may be useful during revision, or elsewhere in
-document] 
-[NEW:Modeling thread creation is/was the most difficult portion of
-this project/modeling concurrency.  OLD:There are a number of
-challenging aspects of modeling the thread creation process.]  It is
-at this stage that the overall model of 
-concurrency must be considered and accounted for.  For example,
-concurrent calls to a driver may be driven by hardware interrupts and
-execute within the kernel, where the process ID is always the same and
-unimportant to the execution of the driver.  Alternatively,
-multi-threaded user-mode programs often assign different tasks to
-threads based on their thread ID, in which case tracking thread IDs
-becomes relevant.  The environment within which concurrent threads of
-execution run must be modeled prior to thread creation to provide the
-framework in which threads will execute [bad sentence, idea is set up
-environment so threads can interact with environment as they run] 
-
-[transition]
-
 
 %%% Local Variables: 
 %%% mode: latex

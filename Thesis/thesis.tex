@@ -5,7 +5,6 @@
 \usepackage{graphicx}
 \usepackage{caption}
 \usepackage{subcaption}
-%\DeclareGraphicsExtensions{.jpg,.png}
 \usepackage{amsmath}
 \usepackage[utf8]{inputenc}
 \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
@@ -13,7 +12,6 @@
 \lstset{
     language=C, % choose the language of the code
     basicstyle=\ttfamily,
-    %basicstyle=\fontfamily{pcr}
     keywordstyle=\color{ForestGreen},
     identifierstyle=\color{Blue},
     numbers=none, % where to put the line-numbers
@@ -31,6 +29,8 @@
     breakatwhitespace=false, 
 }
 
+%Boogie stuff from Rustan Leino -
+%https://github.com/hesam/SketchSharp/blob/master/Boogie/Util/latex/boogie.sty
 \lstdefinelanguage{boogie}{
   morekeywords={type,finite,bool,int,ref,%
       bv0,bv1,bv2,bv3,bv4,bv5,bv6,bv7,bv8,bv9,%
@@ -110,29 +110,7 @@
   morecomment=[l]{//},
   morecomment=[s]{/*}{*/},
   morestring=[b]",
-  %numbers=none,
-  %firstnumber=0,
-  %numberstyle=\tiny,
-  %stepnumber=5,
-  %basicstyle=\scriptsize\sffamily,
-  %commentstyle=\itshape,
-  %keywordstyle=\bfseries,
-  %ndkeywordstyle=\bfseries,
 }
-%\lstnewenvironment{boogie}[1][]{%
-%  \lstset{language=boogie,
-%    floatplacement={tbp},captionpos=b,
-%    frame=lines,xleftmargin=8pt,xrightmargin=8pt,basicstyle=\ttfamily,#1}}{}
-%\lstnewenvironment{boogieNoLines}[1][]{%
-%  \lstset{language=boogie,
-%    floatplacement={tbp},captionpos=b,
-%    xleftmargin=8pt,xrightmargin=8pt,basicstyle=\ttfamily,#1}}{}
-%\def\inlineboogie{%
-%    \lstinline[language=boogie,basicstyle=\ttfamily,columns=fixed]}
-%\newcommand{\lstfile}[1]{
-%  \lstinputlisting[language=boogie,%
-    %frame=lines,xleftmargin=8pt,xrightmargin=8pt,basicstyle=\ttfamily,columns=fixed]{#1}
-%}
 
 
 \fourlevels
@@ -157,9 +135,32 @@
     linkcolor=black,
     urlcolor=black,
     bookmarksopen=true,
-    bookmarksopenlevel=1
+    bookmarksopenlevel=0
 }
 \usepackage{bookmark}
+
+%%% Generate pdfbookmarks in lof & lot for all figures and tables
+\usepackage{etoolbox}
+\makeatletter
+\pretocmd\endfigure{%
+\addtocontents{lof}{\protect{%
+    \bookmark[
+    rellevel=1,
+    keeplevel,
+    dest=\@currentHref,
+    ]{Figure \thefigure: \@currentlabelname}}}%
+}{}{\errmessage{Patching \noexpand\endfigure failed}}
+
+\pretocmd\endtable{%
+\addtocontents{lot}{\protect{%
+    \bookmark[
+    rellevel=1,
+    keeplevel,
+    dest=\@currentHref,
+    ]{Table \thefigure: \@currentlabelname}}}%
+}{}{\errmessage{Patching \noexpand\endtable failed}}
+\makeatother
+
 % DOCUMENT
 \begin{document}
 
@@ -167,11 +168,18 @@
 % front matter
 \frontmatterformat
 \titlepage
+%Add Root node to pdfbookmark, point it to toc
+\bookmark[level=-1,dest=tocBM]{Contents}
 \preface{thesis_abstract}{Abstract}
+\clearpage
+\hypertarget{tocBM}{}%
 \addtocontents{toc}{\protect\sloppy}
 \tableofcontents
 \listoffigures
 \listoftables
+%With lot & lof bookmarks not expanded, switch to next depth to expand
+%chapters node
+\hypersetup{bookmarksopenlevel=1}
 \preface{thesis_acknowledge}{Acknowledgments}
 
 % body
@@ -191,7 +199,6 @@
 \include{thesis_modeldesign}
 \include{thesis_implementation}
 \include{thesis_evaluation}
-\include{thesis_futurework}
 \include{thesis_conclusion}
 
 % end matter
