@@ -1,6 +1,6 @@
 \chapter{Model Design}\label{ch:modeldesign}
 In this chapter, I discuss my research efforts toward developing a
-model of the pthread library in SMACK.  I begin by introducing the
+model of the pthread library for SMACK.  I begin by introducing the
 challenge of modeling the execution environment presented by the
 operating system to the pthread library.  Having introduced this, I
 proceed to discuss the process of modeling concurrency in the pthread
@@ -22,27 +22,21 @@ tracking the running state of each thread, and coordinating the thread
 ID between the C level code and Corral itself.  The critical issue can
 be illustrated by considering the API call
 \lstinline|pthread_join(pthread_t* thr)|. This call blocks the calling
-thread until the thread specified by \lstinline|thr| is in the stopped
-state.  Consequently, properly model this function requires that the
-calling thread must be able to query the environment for the status of
-the thread referenced by \lstinline|thr|, in order to allow the
-calling thread to unblock execution. 
+thread until the thread referenced by \lstinline|thr| is in the stopped
+state.  Consequently, properly modeling this function requires that the
+calling thread must be able to query the environment for the running
+state of the thread referenced by \lstinline|thr|, in order to allow
+the calling thread to unblock execution.
 
-Within the context of static model checking, because no code is
-actually executing, the running state of a thread is simply a bit of
-program state information -- a thread can be marked as waiting,
-running, or stopped. Thus, tracking thread states requires the ability
-to reference some bit of state information about the threads. A
-\lstinline|pthread_t| object passed into \lstinline|pthread_join()|,
-for example, must have some method of referencing this bit of thread
-state information.  It seems natural to store each thread's thread ID
-in this \lstinline|pthread_t| object, and use this to look up the
-thread's state in an array.  Indeed, this is precisely how the
-operating system tracks such information.  In addition, such an array
-must be globally accessible, because threads must be able to query the
-state of another thread (to singal \lstinline|pthread_join()|, for
-example).  To model this, C level code is used to inject a global
-Boogie-level array called \lstinline|$pthreadStatus|; the C level call
+Within the context of static model checking, the running state of a
+thread is simply a bit of program state information -- a thread can be
+marked as waiting, running, or stopped. Thus, tracking thread states
+requires the ability to reference some bit of state information about
+the threads. Such an array must be globally accessible, because threads
+must be able to query the state of another thread (to signal
+\lstinline|pthread_join()|, for example).  To track thread running
+states in the model, C level code was used to inject a global
+Boogie-level array called \lstinline|$pthreadStatus|; the C level call   
 
 \begin{lstlisting}[frame=none,xleftmargin=2\parindent]
 __SMACK_top_decl("var $pthreadStatus: [int][int]int;");
@@ -56,31 +50,38 @@ var $pthreadStatus: [int][int]int;
 
 \noindent in the output Boogie program.
 
-In order to access thread state from \lstinline|$pthreadStatus|, a
-queried thread's thread ID is used to index into the array.  This
-requires that a thread's ID is referenced by its
-\lstinline|pthread_t| object.  This requires immediately querying
-Corral for the thread ID of newly spawned thread, and recording this
-information in its \lstinline|pthread_t|.  This is done from the
-parent with \lstinline|corral_GetChildThreadID()|, and from the child
-with \lstinline|corral_GetThreadID()|.  Now, when
+In order to access a thread's running state from
+\lstinline|$pthreadStatus|, the queried thread's ID is used to index
+into the array.  To accomplish this, \lstinline|pthread_t| objects at
+the C level must somehow  reference the Corral level thread IDs. It
+seems natural to store each thread's ID directly in this
+\lstinline|pthread_t| object. Immediately after each thread is
+spawned, the model must query Corral for the thread ID of the new
+thread, and record its thread ID in the \lstinline|pthread_t|
+representing the thread.  This query is performed from the parent by
+calling \lstinline|corral_GetChildThreadID()|, and from the child by
+calling \lstinline|corral_GetThreadID()|.  With each thread's ID
+stored in its corresponding \lstinline|pthread_t| struct, when
 \lstinline|pthread_join()|, for example, queries Corral for the
-running state of a thread, it can pass in the thread ID to Corral,
-which will use it to index into \lstinline|$pthreadStatus|.
+running state of a thread, it can pass in the thread ID as a
+parameter, which will be used to index into
+\lstinline|$pthreadStatus|. 
 
 However, there is further complication with implementing this
 array. In Boogie, undefined variables take on a nondeterministic value
-- that is, Corral assumes they can have any value.  Without
+-- that is, Corral assumes they can have any value.  Without
 initializing \lstinline|$pthreadStatus|, Corral must consider the case
 that threads start in a \emph{stopped} state.  This means that a call
 to \lstinline|pthread_join()| immediately following a call to
 \lstinline|pthread_create()| could query for the status of the newly
 spawned thread before the new thread has initially set its status to
-waiting, and see it is in the stopped state, causing the parent thread
-to unblock.  To address this, \lstinline|$pthreadStatus| is
-initialized so that all indices indicate an \emph{uninitialized}
-state; the C level call 
-
+\emph{waiting}.  Such an interleaving of parent and child thread
+instructions would cause the parent to see the child as being in the
+\emph{stopped} state, causing the parent to unblock before the child
+ever executed a single instruction. To address this,
+\lstinline|$pthreadStatus| is initialized so that all indices indicate
+an \emph{uninitialized} state; the C level call
+ 
 \begin{lstlisting}[frame=none,xleftmargin=2\parindent]
 __SMACK_code("assume (forall i:int :: "
                              "$pthreadStatus[i][0] == "
@@ -97,11 +98,6 @@ assume (forall i:int :: $pthreadStatus[i][0] ==
 \noindent in the output Boogie program.  This code gets executed as
 the first statement in \lstinline|main()|, to ensure that any thread's
 running state is defined prior to its use. 
-
-With these Boogie level additions to each pthread program's Boogie
-translation, the operating system environment is sufficiently prepared
-to enable the modeling of the actual pthread library behavior.
-
 
 \section{Thread Creation}
 With the pthread library's execution environment modeled, a sufficient
@@ -152,24 +148,15 @@ calling \lstinline|__start_routine()|.
 
 As seen in Figure~\ref{fig:__call_wrapper} the newly spawned thread
 queries Corral for its thread ID, and then makes a call to
-\lstinline|assume()|, which causes Corral to only consider paths
-through the program where \lstinline|*__newthread| already contains
-the thread ID of the child thread -- effectively, the new thread
-``waits'' until its parent has set the child thread's ID in
-\lstinline|*__newthread|. Once this has occurred, both the parent and
-the child have a reference to the newly spawned thread's ID, and can
-use this to index into \lstinline|$pthreadStatus| to set and query the
-child thread's running state information.  
-
-Once the child and parent can both reference the correct
-\lstinline|$pthreadStatus| element, the new thread can proceed to
-executing the specified \lstinline|__start_routine()|.  The new thread
-cycles through the \emph{waiting} state to the \emph{running} state,
-and then makes a synchronous call to the
-\lstinline|__start_routine()|.  After the
-\lstinline|__start_routine()| returns, the thread's running state is
-finally set to \emph{stopped}, which signals the end of the child
-thread. 
+\lstinline|assume()|, which causes Corral to only consider
+interleavings of the parent and child such that
+\lstinline|*__newthread| already contains the thread ID of the child
+thread -- effectively, the new thread ``waits'' until its parent has
+set the child thread's ID in \lstinline|*__newthread|. Once this has
+occurred, both the parent and the child have a reference to the newly
+spawned thread's ID, and can use this to index into
+\lstinline|$pthreadStatus| to set and query the child thread's running
+state information.
 
 \begin{figure}[h]
 \centering
@@ -196,28 +183,35 @@ void __call_wrapper(pthread_t* __newthread,
 \end{lstlisting}
 \end{figure}
 
-
+Once the child and parent can both reference the correct
+\lstinline|$pthreadStatus| element, the new thread can proceed to
+executing the specified \lstinline|__start_routine()|.  The new thread
+cycles through the \emph{waiting} state to the \emph{running} state,
+and then makes a synchronous call to the
+\lstinline|__start_routine()|.  After the
+\lstinline|__start_routine()| returns, the thread's running state is
+finally set to \emph{stopped}, which signals the end of the child
+thread. 
 
 \section{Thread Execution}
-[Good]
-With the ability to spawn threads, [wc it becomes time to] consider
-the functionality of the pthread library that pertains to an executing
+With the ability to spawn threads, we must next consider the
+functionality of the pthread library that pertains to an executing
 thread.  Among this functionality, the most commonly utilized are the
-synchronization routines.
+synchronization routines. 
 
 Corral extends Boogie IVL with two primitives for achieving
 synchronization between threads: \lstinline|corral_atomic_begin()| and
 \lstinline|corral_atomic_end()|.  These calls provide the ability to
-create critical sections of Boogie IVL code, where only one atomic
-block can execute at any time.  However, these atomic blocks are
-global, and take no parameters.  There is no way to differentiate
-atomic blocks of unrelated code that should be allowed to run
-concurrently -- this is much like the big kernel lock in Linux.  This
-presents the need to model the more complex synchronization routines
-of pthreads using Corral's atomic primitives.
+create critical sections of Boogie IVL code, such that the
+instructions of an atomic block cannot be interleaved with those of
+any other atomic block.  However, these atomic blocks are global, and
+take no parameters.  There is no way to differentiate atomic blocks of
+unrelated code that should be allowed to run concurrently -- this is
+much like the big kernel lock in Linux.  This requires the more
+complex synchronization routines of pthreads be modeled using
+Corral's atomic primitives as building blocks.  
 
 \subsection{Modeling Mutexes}
-[Good]
 Mutexes are the most commonly used mechanisms for providing
 synchronization among threads.  In addition, they can be used as
 building blocks to devise more complex synchronization mechanisms.
@@ -230,8 +224,8 @@ independent mutual exclusion device.  To track the current owner of a
 mutex and prevent execution of threads that don't hold the lock, the
 model stores the thread ID of the current mutex owner in the
 \lstinline|pthread_mutex_t| struct.  This allows
-\lstinline|pthread_mutex_lock()| to block until until the mutex is in
-the \emph{UNLOCKED} state.
+\lstinline|pthread_mutex_lock()| to block execution until until the
+mutex is in the \emph{UNLOCKED} state.
 
 
 \begin{figure}[h]
@@ -257,9 +251,9 @@ int pthread_mutex_lock(pthread_mutex_t* __mutex)
 This leads to the straightforward model shown in
 Figure~\ref{fig:pthread_mutex_lock}. The calling thread queries for
 its thread ID using \lstinline|pthread_self()| (which simply queries
-Corral with a call to \lstinline|corral_GetThreadID()|, and returns the
-result). The mutex is then checked to ensure it is in the initial
-state, and that the calling thread is not already the owner of the
+Corral with a call to \lstinline|corral_GetThreadID()|, and returns
+the result). The mutex is then checked to ensure it is in the initial
+state, and that the calling thread is not already the owner of the 
 mutex.  With these criteria ensured, the Boogie translation atomically
 waits for the mutex to enter the \emph{UNLOCKED} state and updates the
 mutex owner to be the calling thread's ID.
@@ -291,28 +285,26 @@ int pthread_mutex_unlock(pthread_mutex_t* __mutex)
 \end{figure}
 
 \subsection{Complex Synchronization}
-[Short, but sufficient?]
 The pthread library also includes a number of more complex
 synchronization mechanisms.  These allow for more efficient runtime
 behavior, in addition to providing commonly utilized synchronization
 mechanisms.
 
-\lstinline|pthread_cond_wait(pthread_cond_t* cond, |
+The call \lstinline|pthread_cond_wait(pthread_cond_t* cond, |
 \lstinline|pthread_mutex_t* mutex)|  is one such function that
 provides more efficient runtime behavior.  It blocks the calling
 thread until both the \lstinline|cond| predicate is true \emph{and}
 \lstinline|mutex| is \emph{UNLOCKED}, at which point the thread is
 signaled to resume. This avoids having to continually acquire the
-mutex and evaluate the predicate.  \lstinline|pthread_barrier_wait()|
-is a good example of a procedure providing expected functionality.  It
-causes calling threads to block until all threads calling
-\lstinline|pthread_barrier_wait()| have reached this instruction.
-These more complex synchronization routines are modeled entirely as C
-level code simply by using \lstinline|pthread_mutex_t|'s as building
-blocks. 
+mutex and evaluate the predicate.  The procedure
+\lstinline|pthread_barrier_wait()| is a good example of a procedure
+providing expected functionality.  It causes calling threads to block
+until all threads calling \lstinline|pthread_barrier_wait()| have
+reached this instruction. These more complex synchronization routines
+are modeled entirely as C level code simply by using
+\lstinline|pthread_mutex_t|'s as building blocks. 
 
 \section{Thread Termination}
-[Good]
 As a thread's execution comes to an end, there is a bit of bookkeeping
 to be done to wrap up the thread's lifecycle.  It is primarily this
 termination handling that required the upfront work of modeling the
@@ -323,23 +315,23 @@ There are two main considerations for handling the termination of a
 thread.  The first consideration is the passing of a return value from
 a terminating thread.  The second is blocking execution of a waiting
 thread, and retrieving the return value of the terminating thread
-being waited on by the blocking thread.
+being waited on.
 
 \subsection{Modeling Thread Exit and Join}
-[Could use another pass or two]
 It is often necessary to pass a return value from a terminating thread
 to some other thread.  For example, with a scatter/gather design
 pattern, a parent thread will send data to multiple worker threads,
 which return a computational result back to the parent.
 
-The challenge with achieving this was that this return data has to
-exist somewhere between the time that the terminating thread exits,
+The challenge in achieving this was that this return data has to
+exist somewhere between the time that the terminating thread exits
 and the joining thread retrieves it.  This functionality was
 implemented by extending the definition of the
-\lstinline|$pthreadStatus| array to store a tuple, rather than a 
-single value.  With this, the model can store a return value passed
-into \lstinline|pthread_exit(void* value)| as the second tuple
-element, in addition to storing thread running state as the first.
+\lstinline|$pthreadStatus| array to store a tuple rather than a 
+single value.  With this, the model can store the return value passed
+into \lstinline|pthread_exit(void* value)| as the second tuple 
+element, in addition to storing the thread'ss running state as the
+first element.
 
 \begin{figure}[h]
 \centering
@@ -365,25 +357,30 @@ void pthread_exit(void *retval)
 The model of \lstinline|pthread_exit()|, seen in
 Figure~\ref{fig:pthread_exit}, gets the calling thread's ID and
 ensures the thread is still in a running state, saves the return value
-pointer in \lstinline|$pthreadStatus|, and finally sets the running to
-stopped.  
-
+pointer in \lstinline|$pthreadStatus|, and finally sets the running
+state to \emph{stopped}.
 
 With the return value from threads now stored in
 \lstinline|$pthreadStatus|, a method for accessing this value is
 needed.  This is done through 
-\lstinline|pthread_join(pthread_t* thr)|, which blocks the calling
-thread until the thread referenced  by \lstinline|thr| terminates.
-The value returned from \lstinline|pthread_join()| is the pointer
-passed in to \lstinline|pthread_exit()| by the terminating thread.
+\lstinline[breaklines]|pthread_join(pthread_t* thr, void** __thread_return)|,
+which blocks the calling thread until the thread referenced by 
+\lstinline|thr| terminates. The pointer \lstinline|__thread_return| is
+set to the pointer passed in to \lstinline|pthread_exit()| by the
+terminating thread (or \lstinline|null| if no such call was made by
+the terminating thread), providing the thread calling
+\lstinline|pthread_join| with a reference to the terminating thread's
+return value.
+
 
 The model designed for \lstinline|pthread_join()|, shown in
 Figure~\ref{fig:pthread_join} implements this behavior.  A call to
 \lstinline|assume()| causes the thread to block until the target
 thread's running state is \emph{stopped}.  Once the terminating thread
 is stopped, the waiting thread fetches the return value pointer from
-the \lstinline|$pthreadStatus| array, which is then returned by the
-call to \lstinline|pthread_join()|.
+the \lstinline|$pthreadStatus| array, which is then assigned to the
+pointer \lstinline|__thread_return|.
+
 
 \begin{figure}[h]
 \centering
@@ -403,24 +400,6 @@ int pthread_join(pthread_t __th, void **__thread_return)
 
 \end{lstlisting}
 \end{figure}
-
-
-[leftover from intro]
-
-
-[Remaining is leftover stuff - may be useful when revising intro]
-This is supported by the accuracy seen in the empirical results of
-initial implementation testing.  My proposed research will extend
-SMACK with a model of a common subset of the pthreads API, enabling
-verification of C/C++ programs utilizing the Pthreads library.
-Extending SMACK to provide support for programs using pthreads has not
-only provided the SMACK community with support for a common
-concurrency paradigm, but also presents an opportunity to investigate
-general constructs useful for modeling concurrency.  These constructs,
-which will necessarily result from extending SMACK, will lend
-themselves to modeling other concurrency libraries like OpenMP and
-MPI.  Further, the resulting constructs should be general enough for
-use within other verification tools. 
 
 %%% Local Variables: 
 %%% mode: latex

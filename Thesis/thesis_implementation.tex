@@ -155,6 +155,26 @@ With a vast majority of pthread calls modeled, the pthread extension
 to SMACK is certainly ready for experimental use, and even with
 real-world programs that don't fully utilize the pthread API.
 
+
+
+
+[leftover from intro]
+
+
+[Remaining is leftover stuff -- may be useful when revising intro]
+This is supported by the accuracy seen in the empirical results of
+initial implementation testing.  My proposed research will extend
+SMACK with a model of a common subset of the pthreads API, enabling
+verification of C/C++ programs utilizing the Pthreads library.
+Extending SMACK to provide support for programs using pthreads has not
+only provided the SMACK community with support for a common
+concurrency paradigm, but also presents an opportunity to investigate
+general constructs useful for modeling concurrency.  These constructs,
+which will necessarily result from extending SMACK, will lend
+themselves to modeling other concurrency libraries like OpenMP and
+MPI.  Further, the resulting constructs should be general enough for
+use within other verification tools. 
+
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "thesis"
