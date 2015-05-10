@@ -6,7 +6,7 @@ advances in computing performance and verification algorithms have
 made these well-understood formal verification techniques available
 for real world applications.  As practical adoption of formal
 verification becomes a reality, it has become necessary to create
-tools that [wc address] the use cases where formal verification will
+tools that address the use cases where formal verification will
 be most advantageous. 
 
 One such use case is the verification of concurrent programs.  As
@@ -25,49 +25,55 @@ Software Institute, and Microsoft Research~\cite{smack}.  With a
 growing user base and active support from both the academic and
 industry communities, it is a good candidate for continued
 development.  SMACK, however, currently lacks support for any form of
-concurrency.  [justify selection of pthreads?]  As such, though
-pthreads support is implemented in other formal verification tools,
-the community benefits from extending SMACK with a model to support
+concurrency.  Requests from the SMACK user community have encouraged
+the SMACK development team to add support for the pthread library as
+its first supported concurrency paradigm.   As such, though pthreads
+support is implemented in other formal verification tools, the
+community benefits from extending SMACK with a model to support
 abstract interpretation of C/C++ programs that utilize the pthreads
-library. 
+library.  
 
 SMACK utilizes an intermediate verification language (IVL) called
 Boogie, which separates the semantic modeling of input source programs
 from the processes and algorithms involved in verifying modeled input
-programs.  Naturally then, extending SMACK to support additional [wc
-input source libraries] requires designing models that express the
-behavior of the [wc source library calls] using the Boogie IVL.
-Designing such models for the pthread API requires investigating and
-understanding the underlying constructs needed for expressing the
-behavior of concurrent programming paradigms in general.  There is
-little published work discussing the design of the underlying building
-blocks used for modeling concurrency. 
+programs.  Rather than directly model checking libraries included by
+input source programs, modeling the behavior of included libraries is
+the preferred method for verifying input programs utilizing such
+libraries.  This reduces both the computational and engineering
+complexity required to verify input programs including such libraries,
+as details such as the underlying hardware, operating system and error
+handling are abstracted away in the models being checked.
 
-[This paragraph = improved disaster]
-In this paper, I demonstrate that the complex behavior of the pthread
-API can be accurately modeled using the very small set of concurrency
-modeling primitives available in Boogie.  First, I generically discuss
-the process of modeling common concurrency constructs, using my
-pthread extension to SMACK as an example. Next, I [describe] the
+It follows, then, that extending SMACK to support the verification of
+input programs that include the pthread library requires designing a
+model that express the behavior of the pthread library using the
+modeling environment available in SMACK.  Designing such a model for
+the pthread API requires investigating and understanding the
+underlying constructs needed for expressing the behavior of concurrent
+programming paradigms in general.  This leads to the thesis of this
+paper:
+
+\begin{quote}
+\begin{center}
+\textbf{Thesis Statement}
+\end{center}
+``The complex behavior of the pthread
+API can be accurately modeled using the set of basic concurrency
+modeling primitives available in the SMACK modeling environment,
+allowing SMACK to accurately verify input programs utilizing the
+pthread library.''
+\end{quote}
+
+In this paper, I demonstrate that SMACK can indeed be used to
+accurately model the pthread library.  First, I discuss in further
+detail the SMACK verification framework.  Having introduced SMACK, I
+proceed to detail the process of developing a model which captures the
+behavior of the pthread library function calls. Next, I describe the
 actual implementation of support for pthreads in the SMACK toolchain,
 allowing for the verification of concurrent programs.  Finally, I
 highlight the empirical testing performed on the pthread extension to
-SMACK which demonstrates the accuracy of the implementation.   
+SMACK which demonstrates the accuracy of the implementation. 
 
-
-[Remaining is leftover stuff - may be useful when revising intro]
-This is supported by the accuracy seen in the empirical results of
-initial implementation testing.  My proposed research will extend
-SMACK with a model of a common subset of the pthreads API, enabling
-verification of C/C++ programs utilizing the Pthreads library.
-Extending SMACK to provide support for programs using pthreads has not
-only provided the SMACK community with support for a common
-concurrency paradigm, but also presents an opportunity to investigate
-general constructs useful for modeling concurrency.  These constructs,
-which will necessarily result from extending SMACK, will lend
-themselves to modeling other concurrency libraries like OpenMP and
-MPI.  Further, the resulting constructs should be general enough for
-use within other verification tools. 
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "thesis"
