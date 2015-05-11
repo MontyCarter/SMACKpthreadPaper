@@ -27,10 +27,10 @@ software verifier, to thoroughly analyze programs, loops and recursion
 are unrolled to a specified bound.  This provides a program with a
 finite number of paths through the program, which allows for symbolic
 execution.  A consequence of this transformation is that programs with
-large or nested loops can cause verification time grow in size
+large or nested loops can see verification times grow 
 exponentially. Benchmarks containing such loops were not
 considered, as they do not focus on the accuracy of pthread support,
-but rather the ability of the verification tool to handle large
+but rather on the ability of the verification tool to handle large
 inputs.  Further, benchmarks were not considered if they required much
 modification or additional support.  One such example of this is that
 some benchmarks use an SVCOMP specific function name pattern.  Any
@@ -47,7 +47,7 @@ verification.  As mentioned above, to thoroughly analyze a program, a
 correct value must be set for the number of times to unroll loops.
 Many benchmarks contain bugs that are only found during the
 n\textsuperscript{th} iteration of a loop.  Finding such bugs requires a
-proper selection for the number of times to unroll loops.  Similarly,
+proper selection of the number of times to unroll loops.  Similarly,
 certain benchmarks contain bugs that are only discovered after a
 certain number of context switches.  These two values were determined
 for each benchmark in preparation for execution.
@@ -60,7 +60,8 @@ i7-3740QM processor under minimal load.
 As functionality and accuracy were the main goals of my
 implementation, the results seen below come from single runs of each
 benchmark.  Runtimes are provided simply to provide a very rough
-comparison between SMACK Future work will certainly include proper
+comparison between SMACK and Lazy-CSeq, the winner of the 2015 SVCOMP
+Concurrency category.   Future work will certainly include proper
 benchmarking for performance. 
 
 \section{Results \& Analysis}

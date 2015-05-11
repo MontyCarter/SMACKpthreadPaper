@@ -1,16 +1,17 @@
 % Complete in less than 350 words.
 SMACK is a static analysis tool for C/C++ programs.  Although SMACK is
 an active project with support from both academia and industry, it
-currently lacks support for any form of concurrency.  The proposed
-research will extend SMACK to include support for a common subset of
-the Pthreads API.  In addition to extending SMACK, the proposed
-research will result in an examination of the generic constructs
-useful for modeling general concurrency within the context of model
-checking and symbolic execution. 
-
-[Maybe expand this a little?][Maybe get rid of generic constructs stuff]
+currently lacks support for any form of concurrency.  This paper
+introduces a recent implementation of an extension to SMACK that
+provides support for the verification of programs utilizing the
+pthread library.  It first discusses the design of a model that
+captures the behavior of the pthread libarary.  Next, it details the
+implementation of the model within the SMACK framework.  Finally, it
+explores an empirical evaluation of the implementation that
+demonstrates its efficacy in verifying programs that utilize the
+pthread library. 
 
 %%% Local Variables: 
 %%% mode: latex
-%%% TeX-master: t
+%%% TeX-master: "thesis"
 %%% End: 

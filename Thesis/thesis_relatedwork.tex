@@ -18,7 +18,7 @@ language that provides primitives for modeling
 concurrency~\cite{civl}.  Included in the CIVL project is a symbolic
 execution tool that reasons about the models designed using CIVL
 programming language.  As a static analysis tool that models the
-behavior of the pthread library, it is much more similar to SMACK that
+behavior of the pthread library, it is much more similar to SMACK than
 Inspect. 
 
 Despite the existence of verification projects supporting programs
@@ -31,7 +31,7 @@ concurrent programs -- a feature previously lacking in SMACK.
 Another promising project is a lock set analysis module for SMACK.
 Under development by Pantazis Deligiannis, the tool tracks critical
 sections locked with a mutex or spinlock, and prevents SMACK from
-considering thread interleaving for mutually excluded critical
+considering thread interleavings of mutually excluded critical
 sections that do not have access conflicts on global variables, or
 race conditions. This currently unpublished work should be easy to
 integrate with the pthread support implemented for SMACK, and promises
