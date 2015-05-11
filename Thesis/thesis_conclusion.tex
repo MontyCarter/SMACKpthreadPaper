@@ -1,5 +1,54 @@
 \chapter{Conclusions \& Future Work}\label{ch:conclusion}
-In conclusion, I concluded that this conclusion is too short and off topic.
+Initial results of benchmark testing prove to be very encouraging with
+regard to the 
+
+
+
+
+
+
+
+In conclusion, I concluded that this conclusion is too short and off
+topic.
+
+
+
+
+
+
+
+
+[left over from this chapter, but out of place here]
+[This paragraph feels like it belongs somewhere else]
+There are two main reasons for modeling a library instead of including
+it as part of the input program.  The first reason is to abstract away
+interaction with the operating system and hardware.  Directly
+including the pthread library as part of input programs would require
+a model of the OS system calls, kernel data, an environmental behavior
+that the pthread library accesses.  The engineering cost of doing this
+is greater than model the pthread library itself.  The second reason
+is that modeling a library greatly reduces the computational
+complexity of verification.  A brief glance at the pthread library
+source reveals much longer, more complex code than the model designed
+in Chapter~\ref{ch:modeldesign}.
+
+[leftover from intro]
+[Remaining is leftover stuff -- may be useful when revising intro]
+This is supported by the accuracy seen in the empirical results of
+initial implementation testing.  My proposed research will extend
+SMACK with a model of a common subset of the pthreads API, enabling
+verification of C/C++ programs utilizing the Pthreads library.
+Extending SMACK to provide support for programs using pthreads has not
+only provided the SMACK community with support for a common
+concurrency paradigm, but also presents an opportunity to investigate
+general constructs useful for modeling concurrency.  These constructs,
+which will necessarily result from extending SMACK, will lend
+themselves to modeling other concurrency libraries like OpenMP and
+MPI.  Further, the resulting constructs should be general enough for
+use within other verification tools. 
+
+
+
 %%% Local Variables: 
 %%% mode: latex
 %%% TeX-master: "thesis"

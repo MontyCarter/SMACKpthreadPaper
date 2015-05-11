@@ -1,73 +1,160 @@
 \chapter{Empirical Evaluation}\label{ch:evaluation}
 In order to assess the accuracy and performance of the newly
-implemented pthread extension to SMACK, regression testing and
-benchmarking was performed to exercise the new model.  The design and
-results of these tests are described in this section. 
+implemented pthread extension to SMACK, I performed regression testing
+and benchmarking to exercise the new model.  The design and results of
+these tests are described in this section.
 
-\section{Methodology}
-[Describe experimental setup.]
+\section{Methodology}\label{sec:methodology}
+Two types of testing were performed on the new implementation of
+pthread support within SMACK: regression testing and benchmarking.
+
+Regression tests were hand-written during model design and
+implementation, and were targeted toward the intended behavior as I
+interpreted it from the pthread specification.  Of course, all such
+tests are passing, as the implementation was designed around these
+regression tests.  These are worth mentioning, however, as they
+demonstrate that the implementation models the basic behavior given by
+the specification. 
+
+In addition to regression testing, benchmark testing was also
+performed to provide more realistic scenarios and input programs with
+which to exercise the new pthread implementation.  The benchmark tests
+were taken from the SVCOMP 2015 Concurrency category.  
+
+The benchmarks selected were chosen for their ability to adequately
+test the pthread implementation for accuracy. As SMACK is a bounded
+software verifier, to thoroughly analyze programs, loops and recursion
+are unrolled to a specified bound.  This provides a program with a
+finite number of paths through the program, which allows for symbolic
+execution.  A consequence of this transformation is that programs with
+large or nested loops can cause verification time grow in size
+exponentially. Benchmarks containing such loops were not
+considered, as they do not focus on the accuracy of pthread support,
+but rather the ability of the verification tool to handle large
+inputs.  Further, benchmarks were not considered if they required much
+modification or additional support.  One such example of this is that
+some benchmarks use an SVCOMP specific function name pattern.  Any
+function starting with \lstinline|__VERIFIER_atomic_| should have its
+instructions executed atomically from any other call to a function
+also starting with \lstinline|__VERIFIER_atomic_|.  Supporting this
+requires patching SMACK directly, and so benchmarks using this were
+not considered.  In addition, there were other characteristics of
+benchmarks which disqualified them from consideration.
+
+The selected benchmarks were then analyzed individually to determine
+the proper parameters that should be passed to SMACK during
+verification.  As mentioned above, to thoroughly analyze a program, a
+correct value must be set for the number of times to unroll loops.
+Many benchmarks contain bugs that are only found during the
+n\textsuperscript{th} iteration of a loop.  Finding such bugs requires a
+proper selection for the number of times to unroll loops.  Similarly,
+certain benchmarks contain bugs that are only discovered after a
+certain number of context switches.  These two values were determined
+for each benchmark in preparation for execution.
+
+With the benchmarks selected, and proper bounding parameters
+determined, the actual testing phase was carried out.  Testing was
+performed on a Ubuntu installation with 12GB of memory and an Intel
+i7-3740QM processor under minimal load.
+
+As functionality and accuracy were the main goals of my
+implementation, the results seen below come from single runs of each
+benchmark.  Runtimes are provided simply to provide a very rough
+comparison between SMACK Future work will certainly include proper
+benchmarking for performance. 
 
 \section{Results \& Analysis}
-[Deliver the goods]
+The results of the benchmark testing described in
+Section~\ref{sec:methodology} are seen in
+Table~\ref{table:benchmarkresults}.  Running times for Lazy-CSeq, the winner 
+of the Concurrency category of the 2015 SVCOMP, are included for
+comparison with SMACK's results.  Note that these are only useful for
+rough comparisons -- the hardware setups were not configured
+identically.  
 
-\begin{table}[h]
+\newcommand{\specialcell}[3][c]{%
+  \begin{tabular}[#1]{@{}#2@{}}#3\end{tabular}}
+
+\begin{table}[h,center]
 \centering
 \caption{SVCOMP Benchmark Results}\label{table:benchmarkresults}
-\begin{tabular}{|l|l|l|l|l|l|}
+\begin{tabular}{|l|c|r|r|r|r|r|}
 \hline 
-Benchmark                  & LOC & \# Thrd & Ctx Switches & SMACK RT        & Lazy-CSeq RT   \\
-\hline\hline
-dekker\_true.c             & 62  & 3       & 3            & 2 s             & 4 s            \\
+\multicolumn{1}{|c|}{\bfseries{Benchmark}} & 
+ \specialcell{c}{\bfseries{Correct}\\\bfseries{Result}} &
+ \multicolumn{1}{c|}{\bfseries{LOC}} &
+ \specialcell{c}{\bfseries{Thread}\\\bfseries{Count}} & 
+ \specialcell{c}{\bfseries{Context}\\\bfseries{Switches}} &
+ \specialcell{c}{\bfseries{SMACK}\\\bfseries{Runtime}} &
+ \specialcell{c}{\bfseries{Lazy-CSeq}\\\bfseries{Runtime}} \\
 \hline
-lamport\_true.c            & 83  & 3       & 3            & 3 s             & 5 s            \\
+dekker\_true.c             & Y & 62  & 3       & 3            & 2 s             & 4 s            \\
 \hline
-lazy01\_false.c            & 57  & 4       & 2            & 5 s             & 1 s            \\
+lamport\_true.c            & Y & 83  & 3       & 3            & 3 s             & 5 s            \\
 \hline
-peterson\_true.c           & 49  & 3       & 3            & 2 s             & 2 s            \\
+lazy01\_false.c            & Y & 57  & 4       & 2            & 5 s             & 1 s            \\
 \hline
-qrcu\_false.c              & 155 & 4       & 3            & 102 s           & 1 s            \\
+peterson\_true.c           & Y & 49  & 3       & 3            & 2 s             & 2 s            \\
 \hline
-queue\_false.c             & 185 & 3       & 2            & 180 s (SIZE=10) & 18 s (SIZE=20) \\
+qrcu\_false.c              & Y & 155 & 4       & 3            & 102 s           & 1 s            \\
 \hline
-queue\_ok\_true.c          & 160 & 3       & 2            & 295 s (SIZE=10) & 51 s (SIZE=20) \\
+queue\_false.c             & Y & 185 & 3       & 2            & \specialcell[c]{r}{180 s\\(Size=10)} &
+                                                                \specialcell[c]{r}{18 s\\(Size=20)} \\
 \hline
-reorder\_2\_false.c        & 90  & 5       & 2            & 4 s             & 2 s            \\
+queue\_ok\_true.c          & Y & 160 & 3       & 2            & \specialcell[c]{r}{295 s\\(Size=10)} &
+                                                                \specialcell[c]{r}{51 s\\(Size=20)} \\
 \hline
-reorder\_5\_false.c        & 88  & 6       & 2            & 11 s            & 3 s            \\
+reorder\_2\_false.c        & Y & 90  & 5       & 2            & 4 s             & 2 s            \\
 \hline
-sigma\_false.c             & 55  & 6       & 2            & 85 s            & 9 s            \\
+reorder\_5\_false.c        & Y & 88  & 6       & 2            & 11 s            & 3 s            \\
 \hline
-singleton\_false.c         & 64  & 7       & 2            & 75 s            & 3 s            \\
+scull\_true.c              & N & 477 & 4       & 2            & N/A             & 5 s            \\
 \hline
-stack\_false.c             & 127 & 3       & 2            & 18 s            & 1 s            \\
+sigma\_false.c             & Y & 55  & 6       & 2            & 85 s            & 9 s            \\
 \hline
-stack\_true.c              & 131 & 3       & 2            & 731 s           & 77 s           \\
+singleton\_false.c         & Y & 64  & 7       & 2            & 75 s            & 3 s            \\
 \hline
-stateful01\_false.c        & 62  & 3       & 2            & 5 s             & 1 s            \\
+sssc12\_true.c             & Y & 43  & 11      & 2            & 54 s            & 14 s           \\
 \hline
-stateful01\_true.c         & 62  & 3       & 2            & 14 s            & 3 s            \\
+stack\_false.c             & Y & 127 & 3       & 2            & 18 s            & 1 s            \\
 \hline
-sync01\_true.c             & 71  & 3       & 2            & 27 s            & 3 s            \\
+stack\_true.c              & Y & 131 & 3       & 2            & 731 s           & 77 s           \\
 \hline
-szymanski\_true.c          & 62  & 3       & 2            & 2 s             & 3 s            \\
+stateful01\_false.c        & Y & 62  & 3       & 2            & 5 s             & 1 s            \\
 \hline
-time\_var\_mutex\_true.c   & 62  & 3       & 2            & 22 s            & 3 s            \\
+stateful01\_true.c         & Y & 62  & 3       & 2            & 14 s            & 3 s            \\
 \hline
-twostage\_3\_false.c       & 136 & 4       & 2            & 19 s            & 2 s            \\
+sync01\_true.c             & Y & 71  & 3       & 2            & 27 s            & 3 s            \\
 \hline
-qrcu\_true.c               & 155 & 4       & 3            & N/A             & 52 s           \\
+szymanski\_true.c          & Y & 62  & 3       & 2            & 2 s             & 3 s            \\
 \hline
-read\_write\_lock\_false.c & 59  & 5       & 2            & N/A             & 1 s            \\
+timevar\_mtx\_true.c       & Y & 62  & 3       & 2            & 22 s            & 3 s            \\
 \hline
-read\_write\_lock\_true.c  & 57  & 5       & 2            & N/A             & 6 s            \\
-\hline
-scull\_true.c              & 477 & 4       & 2            & N/A             & 5 s            \\
-\hline
-sssc12\_true.c             & 43  & *       & 2            & N/A             & 14 s           \\
+twostage\_3\_false.c       & Y & 136 & 4       & 2            & 19 s            & 2 s            \\
 \hline
 \end{tabular}
 \end{table}
 
+The most remarkable aspect of the results is the rate of returning a
+correct result. Only 1 of the 21 benchmarks,
+\lstinline[identifierstyle=\color{black}]|scull_true.c|, did not
+return the correct result.  The benchmarks successfully verified make
+use of a wide array of the modeled pthread API, and span a wide range
+of threads used.   The failing benchmark is currently in the process
+of being analyzed to identify the cause of the incorrect result.
+
+One disappointing aspect of the results is the performance relative to
+the winner of the Concurrency category of the 2015 SVCOMP
+competition.  Notice that with
+\lstinline[identifierstyle=\color{black}]|queue_false.c| and
+\lstinline[identifierstyle=\color{black}]|queue_ok_true.c|, the queue
+size was reduced from an original 20 element queue to a 10 element
+queue, and verification time was still an order of magnitude larger
+than that of Lazy-CSeq.  Indeed, most of the benchmarks tested yield
+substantially longer verification times than Lazy-CSeq.  It is
+suspected that these significantly slower verification times are due
+not only to the design of the pthread model, but also due largely to
+inefficiencies in Corral. 
 
 %%% Local Variables: 
 %%% mode: latex

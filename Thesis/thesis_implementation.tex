@@ -43,7 +43,7 @@ attribute setters/getters controlling the behavior of things such as
 multiprocess mutex scope and thread scheduling had very few calls, if
 any.  As a result, these type of features were left as future
 work. The final set of modeled API calls can be seen in
-Section~\ref{sec:implementedfunctionality}.  
+Section~\ref{sec:implementationstatus}.  
 
 \section{Model Inclusion}
 As mentioned in Section~\ref{sec:modelingenvironment}, libraries
@@ -96,7 +96,7 @@ addressed.
 The first problem is related to the initialization of the
 \lstinline|$pthreadStatus| array, which sets all threads to an
 \emph{uninitialized} state, as described in
-Section~\ref{sec:osenvironmentorwhatever}.  This initialization must
+Section~\ref{sec:executionenvironment}.  This initialization must
 be performed from a within a call to a function, as neither C/C++ nor
 Boogie allow statements to be executed in the global declaration
 scope.  To ensure this initialization happens before any code other
@@ -104,15 +104,15 @@ input program code is evaluated, this initialization of
 \lstinline|$pthreadStatus| must be injected as the first statement in
 \lstinline|main()|.  This required extending SMACK itself with an
 additional C level Boogie injection function, similar to those
-described in Section~\ref{whatever}.  The added functionality causes
-SMACK to search for function definitions whose function name starts
-with \lstinline|__SMACK_init_func_|.  Any such function definition
-encountered while parsing the AST causes SMACK to insert a call to the
-function as the first line of \lstinline|main()|.  This allows such
-functions to be defined in modeled libraries, rather than having to
-modify the source of each input program requiring such an
+described in Section~\ref{sec:clevelmodeling}.  The added functionality
+causes SMACK to search for function definitions whose function name
+starts with \lstinline|__SMACK_init_func_|.  Any such function
+definition encountered while parsing the AST causes SMACK to insert a
+call to the function as the first line of \lstinline|main()|.  This
+allows such functions to be defined in modeled libraries, rather than
+having to modify the source of each input program requiring such an
 initialization.  It is using this new functionality that
-\lstinline|$pthreadStatus| is initialized.
+\lstinline|$pthreadStatus| is initialized. 
 
 The second problem is the ability of a function call to inform SMACK
 that the thread of execution is stopping, such as with the

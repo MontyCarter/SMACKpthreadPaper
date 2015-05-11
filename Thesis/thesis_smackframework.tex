@@ -77,23 +77,22 @@ has simplified the implementation of new model checking algorithms.
 Corral leverages the Boogie verifier's API to parse Boogie code and
 interface with SMT solvers.  However, Corral implements model checking
 algorithms not available with the Boogie verifier, such as the
-Lal/Reps sequentialization algorithm~\cite{Reducing Concurrent
-  Analysis Under}. Indeed, Corral has put considerable effort toward
-providing support for verification of concurrent programs.  As such,
-it was the ideal candidate to use as a back-end verifier for the
-pthreads extension of SMACK.
+Lal/Reps sequentialization algorithm~\cite{LalReps}. Indeed, Corral
+has put considerable effort toward providing support for verification
+of concurrent programs.  As such, it was the ideal candidate to use as
+a back-end verifier for the pthreads extension of SMACK.
 
 However, although providing state of the art algorithms for checking
 concurrent programs, Corral is similar to the Boogie IVL in that it
 provides only low-level support for modeling concurrency.  The Corral
 program verifier provides an extension to Boogie IVL that includes a
 very basic set of primitives for modeling concurrent programs.  The
-behavior prescribed in the pthread specification~\ref{pthreads
-  specification} is much more complex than these low-level concurrency
-primitives recognized by Corral.  As a result, to provide support for
-the more complex pthread API within SMACK, it is necessary to build a
-model  capturing the behavior of the pthread API, using the primitives
-provided by Corral.
+behavior prescribed in the pthread specification~\cite{pthreads} is
+much more complex than these low-level concurrency primitives
+recognized by Corral.  As a result, to provide support for the more
+complex pthread API within SMACK, it is necessary to build a model
+capturing the behavior of the pthread API, using the primitives
+provided by Corral. 
 
 
 \section{SMACK Toolchain}\label{sec:smacktoolchain}
@@ -127,7 +126,7 @@ one of the SMT solvers supported by the back-end solver for
 evaluation. 
 
 \section{Modeling Environment}\label{sec:modelingenvironment}
-As described in Section~\ref{sec:smacktooclhain}, SMACK consumes LLVM
+As described in Section~\ref{sec:smacktoolchain}, SMACK consumes LLVM
 IR bytecode, builds a model of the input program, and generates a
 Boogie IVL model of the input program.  The design of this toolchain
 leaves us with several levels at which modeling semantics can be
@@ -262,7 +261,7 @@ possible that \lstinline|$x| won't be set to the thread ID of either
 children by the time \lstinline|assert()| is called in
 \lstinline|main()|.
 
-\subsection{C Level Modeling}
+\subsection{C Level Modeling}\label{sec:clevelmodeling}
 Because there are several layers at which model semantics can be
 introduced, SMACK has introduced several special C level functions 
 that don't get directly translated into Boogie code.  This allows
