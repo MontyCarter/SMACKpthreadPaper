@@ -5,11 +5,11 @@ phtread library support as part of the SMACK verifier.  This chapter
 provides an overview of the actual implementation of pthread library
 support within SMACK.  I begin the chapter with a specification of the
 goals targeted for the pthread extension to SMACK.  Next, I describe
-the mechanism used for including the model within SMACK.  [This is
-followed by a discussion of changes required in the SMACK tool itself
-to support the new model.]  I conclude the chapter with a description
-of the current state of the implementation in relation to the
-implementation goals.
+the mechanism used for including the model within SMACK.  \iffalse
+[This is followed by a discussion of changes required in the SMACK
+tool itself to support the new model.]\fi  I conclude the chapter with
+a description of the current state of the implementation in relation
+to the implementation goals. 
 
 \section{Implementation Goals}\label{sec:implementationgoals}
 There were two main motivations encouraging the implementation of
@@ -84,6 +84,7 @@ source file containing our model of the pthread library. As a result,
 the AST seen by SMACK during translation to Boogie contains the
 pthread library models described in Chapter~\ref{ch:modeldesign}.
 
+\iffalse
 \section{SMACK Modification?}
 [Maybe delete this section, depending on time]
 [Do a section here on init funcs?]
@@ -124,6 +125,7 @@ responsibility.  When the operating system receives the
 and mark it as \emph{stopped}.  There is no Boogie IVL instruction for
 this, so it must be modeled.  There are several proposals for
 addressing this, but it currently remains unimplemented.
+\fi
 
 \section{Implementation Status}
 \label{sec:implementationstatus}

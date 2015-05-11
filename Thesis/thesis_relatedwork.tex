@@ -1,14 +1,44 @@
 \chapter{Related Work}\label{thesis_relatedwork}
-[Talk about inspect, civl, but indicate that existence of related works
-did not negate the need for pthread extension to smack.]
+Though I am unaware of any publications specifically on modeling
+pthreads for static analysis, there are several verification projects
+that provide support for the pthread library.  These project include
+both dynamic verification tools, as well as static analysis tools.
 
-[Mention Pantazis - but will also tie this in during future work]
+Insepct is one such dynamic verification tool that provides support
+for verifying programs utilizing the pthread library.  It uses modern 
+algorithms to reduce the search space of thread scheduling, and
+dynamically executes this reduced set of thread schedules, looking for
+bugs such as deadlocks and race conditions.  It works by instrumenting
+the source code to communicate with a scheduler which explores each of
+the reduced set of thread schedules~\cite{inspect}.
 
-[In addition, do a little more searching to see if there is anything
-else worth mentioning here.]
+CIVL is an example of a static analysis tool that provides support for
+pthreads.  CIVL, itself, is an extension of the C programming
+language that provides primitives for modeling
+concurrency~\cite{civl}.  Included in the CIVL project is a symbolic
+execution tool that reasons about the models designed using CIVL
+programming language.  As a static analysis tool that models the
+behavior of the pthread library, it is much more similar to SMACK that
+Inspect. 
 
+Despite the existence of verification projects supporting programs
+utilizing the pthread library, the extension to SMACK providing
+support for pthread programs is justified.  SMACK is an actively
+developed tool with an active and growing user base.  Extending SMACK
+to support pthreads provides this community with a tool for analyzing
+concurrent programs -- a feature previously lacking in SMACK.
+
+Another promising project is a lock set analysis module for SMACK.
+Under development by Pantazis Deligiannis, the tool tracks critical
+sections locked with a mutex or spinlock, and prevents SMACK from
+considering thread interleaving for mutually excluded critical
+sections that do not have access conflicts on global variables, or
+race conditions. This currently unpublished work should be easy to
+integrate with the pthread support implemented for SMACK, and promises
+to drastically reduce the number of thread interleavings that SMACK is
+required to explore.  
 
 %%% Local Variables: 
 %%% mode: latex
-%%% TeX-master: t
+%%% TeX-master: "thesis"
 %%% End: 
