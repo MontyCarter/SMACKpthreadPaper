@@ -704,6 +704,7 @@
         \addcontentsline{toc}{chapter}%
         %{\protect\numberline{\thechapter.}\texorpdfstring{\protect\vspace{-22pt}}{}\thesisTOC{#1}}%
         {\protect\numberline{\thechapter.}\thesisTOC{#1}}%
+        \addtocontents{toc}{\vspace{4pt}}
     \else
        \addcontentsline{toc}{chapter}{\thesisTOC{#1}}%
     \fi
