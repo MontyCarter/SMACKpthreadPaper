@@ -1,10 +1,10 @@
 \chapter{Model Design}\label{ch:modeldesign}
-In this chapter, I discuss my research efforts toward developing a
-model of the pthread library for SMACK.  I begin by introducing the
-challenge of modeling the execution environment presented by the
-operating system to the pthread library.  Having introduced this, I
-proceed to discuss the process of modeling concurrency in the pthread
-library over the lifecycle of a pthread.
+This chapter discusses research efforts toward developing a model of
+the pthread library for SMACK.  It begins by introducing the challenge
+of modeling the execution environment presented by the operating 
+system to the pthread library.  Having introduced this, it proceeds to
+discuss the process of modeling concurrency in the pthread library
+over the lifecycle of a pthread. 
 
 \section{Execution Environment}\label{sec:executionenvironment}
 One of the critical tasks in implementing support for pthreads in
@@ -14,7 +14,7 @@ each thread spawned within a process.  This information is tracked by
 the operating system in a thread control block (TCB).  At any time, a
 thread must be able to query for its thread ID.  Similarly, a 
 parent thread must be able to query the operating system for the
-running state threads it has spawned.
+running state threads of it has spawned.
 
 Faithfully modeling the environment seen by the pthread library
 requires addressing a number of bookkeeping issues.  These include
@@ -76,11 +76,16 @@ to \lstinline|pthread_join()| immediately following a call to
 \lstinline|pthread_create()| could query for the status of the newly
 spawned thread before the new thread has initially set its status to
 \emph{waiting}.  Such an interleaving of parent and child thread
-instructions would cause the parent to see the child as being in the
-\emph{stopped} state, causing the parent to unblock before the child
-ever executed a single instruction. To address this,
-\lstinline|$pthreadStatus| is initialized so that all indices indicate
-an \emph{uninitialized} state; the C level call
+instructions would force Corral to consider the case where the parent
+sees the child as being in the \emph{stopped} state, since
+\lstinline|$pthreadStatus| at the child thread's index would be
+uninitialized and nondeterministic in value.  This would allow the
+parent to unblock before the child ever executed a single
+instruction, since under these conditions it would be possible for
+\lstinline|$pthreadStatus| to have a value of \emph{stopped} in the
+child thread's index. To address this,\lstinline|$pthreadStatus| is
+initialized so that all indices indicate an \emph{uninitialized}
+state; the C level call  
  
 \begin{lstlisting}[frame=none,xleftmargin=2\parindent]
 __SMACK_code("assume (forall i:int :: "
@@ -194,7 +199,7 @@ finally set to \emph{stopped}, which signals the end of the child
 thread. 
 
 \section{Thread Execution}
-With the ability to spawn threads, we must next consider the
+With the ability to spawn threads, the next consideration is the 
 functionality of the pthread library that pertains to an executing
 thread.  Among this functionality, the most commonly utilized are the
 synchronization routines. 
@@ -221,7 +226,7 @@ foundation.
 
 Each \lstinline|pthread_mutex_t| object allocated creates an
 independent mutual exclusion device.  To track the current owner of a
-mutex and prevent execution of threads that don't hold the lock, the
+mutex and prevent execution of threads that do not hold the lock, the
 model stores the thread ID of the current mutex owner in the
 \lstinline|pthread_mutex_t| struct.  This allows
 \lstinline|pthread_mutex_lock()| to block execution until until the
@@ -252,17 +257,11 @@ This leads to the straightforward model shown in
 Figure~\ref{fig:pthread_mutex_lock}. The calling thread queries for
 its thread ID using \lstinline|pthread_self()| (which simply queries
 Corral with a call to \lstinline|corral_GetThreadID()|, and returns
-the result). The mutex is then checked to ensure it is in the initial
-state, and that the calling thread is not already the owner of the 
-mutex.  With these criteria ensured, the Boogie translation atomically
-waits for the mutex to enter the \emph{UNLOCKED} state and updates the
-mutex owner to be the calling thread's ID.
-
-\lstinline|pthread_mutex_unlock()|, seen in
-Figure~\ref{fig:pthread_mutex_unlock}, releases a mutex, and is
-essentially the inverse of \lstinline|pthread_mutex_lock()|; the model
-ensures the mutex is initialized and the calling thread is the current
-owner, and atomically sets the mutex as being unlocked. 
+the result). The mutex is then checked to ensure it has been
+initialized, and that the calling thread is not already the owner of
+the mutex.  With these criteria ensured, the Boogie translation
+atomically waits for the mutex to enter the \emph{UNLOCKED} state and
+updates the mutex owner to be the calling thread's ID. 
 
 \begin{figure}[!ht]
 \centering
@@ -283,6 +282,12 @@ int pthread_mutex_unlock(pthread_mutex_t* __mutex)
 \caption{Model: pthread\_mutex\_unlock()}
 \label{fig:pthread_mutex_unlock}
 \end{figure}
+
+The procedure \lstinline|pthread_mutex_unlock()|, seen in
+Figure~\ref{fig:pthread_mutex_unlock}, releases a mutex, and is
+essentially the inverse of \lstinline|pthread_mutex_lock()|; the model
+ensures the mutex is initialized and the calling thread is the current
+owner, and atomically sets the mutex as being unlocked. 
 
 \subsection{Complex Synchronization}
 The pthread library also includes a number of more complex
@@ -330,7 +335,7 @@ implemented by extending the definition of the
 \lstinline|$pthreadStatus| array to store a tuple rather than a 
 single value.  With this, the model can store the return value passed
 into \lstinline|pthread_exit(void* value)| as the second tuple 
-element, in addition to storing the thread'ss running state as the
+element, in addition to storing the thread's running state as the
 first element.
 
 \begin{figure}[!ht]
@@ -372,16 +377,6 @@ the terminating thread), providing the thread calling
 \lstinline|pthread_join| with a reference to the terminating thread's
 return value.
 
-
-The model designed for \lstinline|pthread_join()|, shown in
-Figure~\ref{fig:pthread_join} implements this behavior.  A call to
-\lstinline|assume()| causes the thread to block until the target
-thread's running state is \emph{stopped}.  Once the terminating thread
-is stopped, the waiting thread fetches the return value pointer from
-the \lstinline|$pthreadStatus| array, which is then assigned to the
-pointer \lstinline|__thread_return|.
-
-
 \begin{figure}[!ht]
 \centering
 \begin{lstlisting}
@@ -396,10 +391,19 @@ int pthread_join(pthread_t __th, void **__thread_return)
 
   return 0;
 }
-
 \end{lstlisting}
 \caption{Model: pthread\_join()}\label{fig:pthread_join}
 \end{figure}
+
+The model designed for \lstinline|pthread_join()|, shown in
+Figure~\ref{fig:pthread_join} implements this behavior.  A call to
+\lstinline|assume()| causes the thread to block until the target
+thread's running state is \emph{stopped}.  Once the terminating thread
+is stopped, the waiting thread fetches the return value pointer from
+the \lstinline|$pthreadStatus| array, which is then assigned to the
+pointer \lstinline|__thread_return|.
+
+
 
 %%% Local Variables: 
 %%% mode: latex

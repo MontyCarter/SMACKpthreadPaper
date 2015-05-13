@@ -1,31 +1,30 @@
 \chapter{Implementation}\label{ch:implementation}
-With the model of the pthread library in place, the next step in my
-research was to look forward and consider the actual implementation of
-phtread library support as part of the SMACK verifier.  This chapter
-provides an overview of the actual implementation of pthread library
-support within SMACK.  I begin the chapter with a specification of the
-goals targeted for the pthread extension to SMACK.  Next, I describe
-the mechanism used for including the model within SMACK.  \iffalse
-[This is followed by a discussion of changes required in the SMACK
-tool itself to support the new model.]\fi  I conclude the chapter with
-a description of the current state of the implementation in relation
-to the implementation goals. 
+With the model of the pthread library in place, the next consideration
+was the actual implementation of phtread library support as part of
+the SMACK verifier.  This chapter provides an overview of the actual
+implementation of pthread library support within SMACK.  It begins the
+with a specification of the goals targeted for the pthread extension
+to SMACK.  Next, it describes the mechanism used for including 
+the model within SMACK.  \iffalse [This is followed by a discussion of
+changes required in the SMACK tool itself to support the new
+model.]\fi  The chapter concludes with a description of the current
+state of the implementation in relation to the implementation goals.
 
 \section{Implementation Goals}\label{sec:implementationgoals}
 There were two main motivations encouraging the implementation of
 support for programs utilizing pthreads within SMACK.  The first, as
 mentioned in Chapter~\ref{ch:introduction}, were requests from the
 SMACK user community.  The second was to improve SMACK's performance
-in the SVCOMP software verification competition.  SVCOMP is an
-international software verification, and is co-located with the TACAS
-conference, competition.  Last year SMACK made its debut appearance at
-SVCOMP, but had several categories in which it was unable to compete;
-pthreads was one of these categories.
+in the SVCOMP software verification competition. SVCOMP is an
+international software verification competition, and is co-located
+with the TACAS conference.  Last year SMACK made its debut appearance
+at SVCOMP, but had several categories in which it was unable to
+compete; pthreads was one of these categories.  
 
 The specific needs of these two motivators largely overlap; both
 require support for the most commonly utilized functionality of the
 pthread library.  To assess the most commonly utilized functionality,
-I collected benchmarks from SVCOMP, as well as from the Inspect and
+benchmarks were collected from SVCOMP, as well as from the Inspect and
 CIVL projects to diversify the sample of benchmarks.  This collection
 was then scanned for calls into the pthread API.  A count of the
 number of occurrences for each call was generated, and the pthread API
@@ -38,11 +37,10 @@ procedures such as \lstinline[breaklines]|pthread_create()|,
 \lstinline[breaklines]|pthread_join()|,
 \lstinline[breaklines]|pthread_mutex_lock()| and 
 \lstinline[breaklines]|pthread_mutex_unlock()| were at the top of the
-list. However, functionality such as error handling options as well as
-attribute setters/getters controlling the behavior of things such as
-multiprocess mutex scope and thread scheduling had very few calls, if
-any.  As a result, these type of features were left as future
-work. The final set of modeled API calls can be seen in
+list. However, there were very few calls, if any, to functionality for
+controlling options such as error handling, mutex process scope, or
+thread scheduling. As a result, these type of features were left as
+future work. The final set of modeled API calls can be seen in
 Section~\ref{sec:implementationstatus}.  
 
 \section{Model Inclusion}
@@ -65,10 +63,10 @@ rather than returning a nondeterministic value.
 
 Because SMACK uses Clang to compile input programs to LLVM bytecode,
 these externally defined functions can be referenced by the input
-C/C++ program the same way that externally defined functionality is
-added to any C/C++ program. Header files are included to declare the
-functions, and calls to the functions are resolved by the linker to
-point the definitions contained in the compiled library file.
+C/C++ program the same way that externally defined functions are
+referenced by any C/C++ program. Header files are included to declare
+the functions, and calls to the functions are resolved by the linker
+to point the definitions contained in the compiled library file.
 
 This strategy of providing a replacement library containing a model
 of the original library is precisely how the pthread model discussed
@@ -78,11 +76,11 @@ Clang, it passes the \emph{-I} switch with the path to the replacement
 SMACK version of \lstinline[identifierstyle=\color{black}]|pthread.h|
 to be included, rather than searching the default include paths and
 using the system \lstinline[identifierstyle=\color{black}]|pthread.h|.
-With our declarations of the pthread API included, the compiled input
-program bytecode is then linked with the bytecode compiled from the C
-source file containing our model of the pthread library. As a result,
-the AST seen by SMACK during translation to Boogie contains the
-pthread library models described in Chapter~\ref{ch:modeldesign}.
+With SMACK's declarations of the pthread API included, the compiled
+input program bytecode is then linked with the bytecode compiled from
+the C source file containing SMACK's model of the pthread library. As
+a result, the AST seen by SMACK during translation to Boogie contains
+the pthread library models described in Chapter~\ref{ch:modeldesign}.
 
 \iffalse
 \section{SMACK Modification?}
@@ -166,7 +164,7 @@ following pthread API calls:
 
 With the most commonly used pthread functions modeled, the pthread
 extension to SMACK is certainly ready for experimental use, and even
-real-world use with programs that don't fully utilize the pthread
+real-world use with programs that do not fully utilize the pthread
 API. 
 
 This implementation extending SMACK to provide support for the

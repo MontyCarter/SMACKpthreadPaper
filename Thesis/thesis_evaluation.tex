@@ -1,8 +1,8 @@
 \chapter{Empirical Evaluation}\label{ch:evaluation}
 In order to assess the accuracy and performance of the newly
-implemented pthread extension to SMACK, I performed regression testing
-and benchmarking to exercise the new model.  The design and results of
-these tests are described in this section.
+implemented pthread extension to SMACK, regression testing and
+benchmarking was performed to exercise the new model.  The design and
+results of these tests are described in this section.
 
 \section{Methodology}\label{sec:methodology}
 Two types of testing were performed on the new implementation of
@@ -33,13 +33,14 @@ considered, as they do not focus on the accuracy of pthread support,
 but rather on the ability of the verification tool to handle large
 inputs.  Further, benchmarks were not considered if they required much
 modification or additional support.  One such example of this is that
-some benchmarks use an SVCOMP specific function name pattern.  Any
-function starting with \lstinline|__VERIFIER_atomic_| should have its
-instructions executed atomically from any other call to a function
-also starting with \lstinline|__VERIFIER_atomic_|.  Supporting this
-requires patching SMACK directly, and so benchmarks using this were
-not considered.  In addition, there were other characteristics of
-benchmarks which disqualified them from consideration.
+some benchmarks use an SVCOMP specific function name pattern to signal
+special verifier behavior.  Any function starting with
+\lstinline|__VERIFIER_atomic_| should have its instructions executed
+atomically from any other call to a function also starting with
+\lstinline|__VERIFIER_atomic_|.  Supporting this requires patching
+SMACK directly, and so benchmarks using this were not considered.  In
+addition, there were other characteristics of benchmarks which
+disqualified them from consideration. 
 
 The selected benchmarks were then analyzed individually to determine
 the proper parameters that should be passed to SMACK during
@@ -57,21 +58,21 @@ determined, the actual testing phase was carried out.  Testing was
 performed on a Ubuntu installation with 12GB of memory and an Intel
 i7-3740QM processor under minimal load.
 
-As functionality and accuracy were the main goals of my
+As functionality and accuracy were the main goals of the
 implementation, the results seen below come from single runs of each
 benchmark.  Runtimes are provided simply to provide a very rough
-comparison between SMACK and Lazy-CSeq, the winner of the 2015 SVCOMP
-Concurrency category.   Future work will certainly include proper
-benchmarking for performance. 
+comparison between SMACK and Lazy-CSeq, the winner of the Concurrency
+category in the 2015 SVCOMP.  Future work will certainly include
+proper benchmarking for performance.
 
 \section{Results and Analysis}
 The results of the benchmark testing described in
 Section~\ref{sec:methodology} are seen in
 Table~\ref{table:benchmarkresults}.  Running times for Lazy-CSeq, the winner 
 of the Concurrency category of the 2015 SVCOMP, are included for
-comparison with SMACK's results.  Note that these are only useful for
-rough comparisons -- the hardware setups were not configured
-identically.  
+comparison with SMACK's results~\cite{TACAS15}.  Note that these are
+only useful for rough comparisons -- the hardware setups were not
+configured identically.
 
 \newcommand{\specialcell}[3][c]{%
   \begin{tabular}[#1]{@{}#2@{}}#3\end{tabular}}
@@ -138,10 +139,11 @@ twostage\_3\_false.c       & 136 & 4       & 2            & 19            & 2   
 The most remarkable aspect of the results is the rate of returning a
 correct result. Only 1 of the 21 benchmarks,
 \lstinline[identifierstyle=\color{black}]|scull_true.c|, did not
-return the correct result.  The benchmarks successfully verified make
-use of a wide array of the modeled pthread API, and span a wide range
-of threads used.   The failing benchmark is currently in the process
-of being analyzed to identify the cause of the incorrect result.
+return the correct result.  The benchmarks which return correct
+results make use of a wide array of the modeled pthread API, and span
+a wide range of number of threads used.   The failing benchmark is
+currently in the process of being analyzed to identify the cause of
+the incorrect result.
 
 One disappointing aspect of the results is the performance relative to
 the winner of the Concurrency category of the 2015 SVCOMP

@@ -47,11 +47,8 @@ handling are abstracted away in the models being checked.
 It follows, then, that extending SMACK to support the verification of
 input programs that include the pthread library requires designing a
 model that express the behavior of the pthread library using the
-modeling environment available in SMACK.  Designing such a model for
-the pthread API requires investigating and understanding the
-underlying constructs needed for expressing the behavior of concurrent
-programming paradigms in general.  This leads to the thesis of this
-paper:
+modeling environment available in SMACK.  This leads to the thesis of
+this paper:
 
 \begin{quote}
 \begin{center}
@@ -64,15 +61,16 @@ allowing SMACK to accurately verify input programs utilizing the
 pthread library.''
 \end{quote}
 
-In this paper, I demonstrate that SMACK can indeed be used to
-accurately model the pthread library.  First, I discuss in further
-detail the SMACK verification framework.  Having introduced SMACK, I
-proceed to detail the process of developing a model which captures the
-behavior of the pthread library function calls. Next, I describe the
-actual implementation of support for pthreads in the SMACK toolchain,
-allowing for the verification of concurrent programs.  Finally, I
-highlight the empirical testing performed on the pthread extension to
-SMACK which demonstrates the accuracy of the implementation. 
+This paper demonstrates that SMACK can indeed be used to
+accurately model the pthread library.  It first discusses the SMACK
+verification framework in further detail.  Having introduced SMACK, it 
+proceeds to detail the process of developing a model which captures
+the behavior of the pthread library function calls. Next, it describes
+the actual implementation of support for pthreads in the SMACK
+toolchain, allowing for the verification of concurrent programs.
+Finally, it highlights the empirical testing performed on the pthread
+extension to SMACK which demonstrates the accuracy of the
+implementation.  
 
 %%% Local Variables: 
 %%% mode: latex

@@ -2,10 +2,11 @@
 SMACK is part of a modular software verification framework which is
 built on top of the Boogie intermediate verification language (IVL),
 and aims to reduce the large engineering effort typically required for
-implementing bounded software verification tools.  In this chapter, I
-provide some background for SMACK's verification framework, introduce
-the SMACK toolchain, and finally, discuss the environment presented by
-the framework for modeling input program behavior. 
+implementing bounded software verification tools.  This chapter first
+provides some background for SMACK's verification framework, then
+introduces the SMACK toolchain, and finally, discusses the
+environment presented by the framework for modeling input program
+behavior.  
 
 \section{Framework Background}
 Developing a fully featured bounded software verification tool from
@@ -13,10 +14,11 @@ end-to-end can be a daunting task.  Bounded model checking requires
 several steps.  First, the input source code must be parsed or
 compiled.  The resulting abstract syntax tree (AST) must then be
 semantically interpreted, and a model built of underlying program
-semantics. Finally, the modeled program must be represented as an SMT
-query and passed through an SMT solver.  This imposes a large barrier
-to entry for prototyping a new model checking algorithm, or building a
-verification tool for a new source language using existing algorithms.
+semantics. Finally, the modeled program must be represented as a
+satisfiability modulo theories (SMT) query and passed through an SMT
+solver.  This imposes a large barrier to entry for prototyping a new
+model checking algorithm, or building a verification tool for a new
+source language using existing algorithms. 
 
 The Boogie intermediate verification language (IVL) was designed by
 Microsoft Research to alleviate the complexity of modeling new source
@@ -67,7 +69,7 @@ Boogie IVL, while ``Boogie verifier'' will refer to the back end
 solver.)  In addition to being a complete back-end verifier for Boogie
 programs, it also provides an API for parsing Boogie IVL and 
 interfacing with SMT solvers. As the goal of Boogie is to modularize
-model checking verifiers, it shouldn't be surprising that there are
+model checking verifiers, it should not be surprising that there are
 several additional back-end solvers that perform verification of
 Boogie programs, such as Corral and Duality.  
 
@@ -75,12 +77,13 @@ Corral is one of the more popular back-end solvers for Boogie
 programs, and also happens to be an excellent example of how Boogie
 has simplified the implementation of new model checking algorithms.
 Corral leverages the Boogie verifier's API to parse Boogie code and
-interface with SMT solvers.  However, Corral implements model checking
-algorithms not available with the Boogie verifier, such as the
-Lal/Reps sequentialization algorithm~\cite{LalReps}. Indeed, Corral
-has put considerable effort toward providing support for verification
-of concurrent programs.  As such, it was the ideal candidate to use as
-a back-end verifier for the pthreads extension of SMACK.
+interface with SMT solvers~\cite{corral}.  However, Corral implements
+model checking algorithms not available with the Boogie verifier, such
+as the Lal/Reps sequentialization algorithm~\cite{LalReps}. Indeed,
+Corral has put considerable effort toward providing support for
+verification of concurrent programs.  As such, it was the ideal
+candidate to use as a back-end verifier for the pthreads extension of
+SMACK. 
 
 However, although providing state of the art algorithms for checking
 concurrent programs, Corral is similar to the Boogie IVL in that it
@@ -129,22 +132,22 @@ evaluation.
 As described in Section~\ref{sec:smacktoolchain}, SMACK consumes LLVM
 IR bytecode, builds a model of the input program, and generates a
 Boogie IVL model of the input program.  The design of this toolchain
-leaves us with several levels at which modeling semantics can be
+provides several levels at which modeling semantics can be
 introduced. At the C level, external library functions that are
 otherwise undefined can be given a definition, rather than verifying
 the entire original source library. At the SMACK translation level,
 undefined functions can be intercepted so SMACK can perform predefined
-alterations to the translated Boogie program, rather directly being
-translated from the LLVM IR representation.  At the translated Boogie
-level, additional variables and instructions can be added to model
-environmental functionality that is not defined at the C
-level. Finally, there can be additional functionality modeled by the
+alterations to the translated Boogie program, rather than being
+directly translated from the LLVM IR representation.  At the
+translated Boogie level, additional variables and instructions can be
+added to model environmental functionality that is not defined at the
+C level. Finally, additional functionality can be modeled by the
 back-end solver itself. 
 
 To provide some context for the discussion of the modeling process,
-I'll briefly introduce Boogie IVL, and then discuss the mechanisms
-used for modeling, such as the Corral concurrency primitives and C
-level Boogie injection.
+the remainder of this chapter briefly introduces Boogie IVL, and then
+discusses the mechanisms used for modeling, such as the Corral
+concurrency primitives and C level Boogie injection.
 
 \subsection{Boogie IVL}
 The most illustrative way to introduce Boogie IVL is to simply show an
@@ -251,21 +254,23 @@ records the thread ID of each of the spawned threads of execution.  In
 \lstinline|f()|, each of the spawned threads records their thread IDs.
 Each thread then starts an atomic block, where it stores its thread ID
 to the global \lstinline|$x| and then loads global \lstinline|$x| into
-the local \lstinline|$tmp|.  The \lstinline|assert()| in
+the local variable \lstinline|$tmp|.  The \lstinline|assert()| in
 \lstinline|f()| should always succeed, since \lstinline|$x| is stored
 and loaded within an atomic block. 
 
 However, this program contains a bug.  Because there is no barrier
 forcing the parent to wait for the child threads to execute, it is
-possible that \lstinline|$x| won't be set to the thread ID of either
-children by the time \lstinline|assert()| is called in
+possible that \lstinline|$x| will not be set to the thread ID of
+either children by the time \lstinline|assert()| is called in
 \lstinline|main()|.
 
 \subsection{C Level Modeling}\label{sec:clevelmodeling}
 Because there are several layers at which model semantics can be
-introduced, SMACK has introduced several special C level functions 
-that don't get directly translated into Boogie code.  This allows
-users to introduce program semantics at the lower levels of the
+introduced, SMACK has introduced several special C level functions
+which insert model semantics at these various layers.
+These special C level functions are not directly translated into
+Boogie code, but, instead, are processed specially by SMACK.  This
+allows users to introduce program semantics at the lower levels of the
 modeling environment by writing code at the C level.  As a result, OS
 environment and library models can be completely written as libraries
 which get included C by input programs.  This avoids modifying SMACK's
@@ -328,8 +333,8 @@ Input to both of these functions is similar to that of C's
 ``...''.  Figure~\ref{fig:cinjToBoogie} demonstrates the C level usage,
 and Boogie level translations of both of these functions.
 
-My implementation of pthread support for SMACK performs modeling
-exclusively at the C code level, using these Boogie injection
+The new implementation of pthread support for SMACK performs modeling
+exclusively at the C code level, using these Boogie injection 
 functions to model environmental state where necessary.
 
 %%% Local Variables: 
