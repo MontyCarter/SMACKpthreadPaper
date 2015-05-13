@@ -680,7 +680,7 @@
 %
 %\chapter command \def's
 \def\@optionA{A}
-\def\thesisTOC#1{\uppercase{#1}}
+\def\thesisTOC#1{\texorpdfstring{\nohyphenation\linepenalty=0\uppercase}{}{#1}}
 %
 \def\@chapter[#1]#2{\clearpage
   \thispagestyle{empty}%
@@ -699,21 +699,13 @@
         \addcontentsline{toc}{groupheader}{APPENDICES}%
       \fi
       \ifx\@tmp\@optionONE
-        \addcontentsline{toc}{groupheader}{\uppercase{Chapters}}
+        \addcontentsline{toc}{groupheader}{\texorpdfstring{\uppercase}{}{Chapters}}
       \fi
-        \hyphenpenalty=10000
-        \exhyphenpenalty=10000
         \addcontentsline{toc}{chapter}%
+        %{\protect\numberline{\thechapter.}\texorpdfstring{\protect\vspace{-22pt}}{}\thesisTOC{#1}}%
         {\protect\numberline{\thechapter.}\thesisTOC{#1}}%
-        \hyphenpenalty=400
-        \exhyphenpenalty=400
-        %\addcontentsline{toc}{groupheader}{\protect\vspace{-22pt}}
     \else
-       \hyphenpenalty=10000
-       \exhyphenpenalty=10000
        \addcontentsline{toc}{chapter}{\thesisTOC{#1}}%
-       \hyphenpenalty=400
-       \exhyphenpenalty=400
     \fi
     \ifnoisy \typeout{\@chapapp\space\thechapter.} \fi
     \mainheading{\@chapapp\space\thechapter}
@@ -1546,7 +1538,7 @@ Please use the updated form on the Thesis Office website
     \newpage
     \phantomsection
     \thispagestyle{empty}
-    \addcontentsline{toc}{chapter}{\uppercase{List of Figures}}
+    \addcontentsline{toc}{chapter}{\texorpdfstring{\uppercase}{}{List of Figures}}
     \mainheading{LIST OF FIGURES}\vskip 3pt
     \ifnoisy \typeout{List of Figures.} \fi
     \@starttoc{lof}
@@ -1571,7 +1563,7 @@ Please use the updated form on the Thesis Office website
     \newpage
     \phantomsection
     \thispagestyle{empty}
-    \addcontentsline{toc}{chapter}{\uppercase{List of Tables}}
+    \addcontentsline{toc}{chapter}{\texorpdfstring{\uppercase}{}{List of Tables}}
     \mainheading{LIST OF TABLES}\vskip 3pt
     \ifnoisy \typeout{List of Tables.} \fi
     \@starttoc{lot}
@@ -1608,7 +1600,7 @@ Please use the updated form on the Thesis Office website
   \phantomsection
   \thispagestyle{empty}
   \normalspace
-  \addcontentsline{toc}{chapter}{\uppercase{#1}}
+  \addcontentsline{toc}{chapter}{\texorpdfstring{\uppercase}{}{#1}}
   \mainheading{#1}\fixmainheadingSKIP
 }
 
@@ -1679,7 +1671,7 @@ Please use the updated form on the Thesis Office website
   \newpage
   \phantomsection
   \thispagestyle{empty}%
-  \addcontentsline{toc}{chapter}{\uppercase{References}}%
+  \addcontentsline{toc}{chapter}{\texorpdfstring{\uppercase}{}{References}}%
 % Switch singlespace to after the heading gets printed.
   \mainheading{REFERENCES}%
   \par\removelastskip\singlespace\par\removelastskip% GBG Oct 1993

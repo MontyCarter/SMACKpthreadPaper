@@ -109,10 +109,10 @@ that drives the entire process.  In conjunction with one of several
 supported back-end solvers, this makes SMACK an end-to-end bounded
 software verification tool for C/C++ programs.
 
-\begin{figure}[!h]
+\begin{figure}[!ht]
+  \includegraphics[width=1\textwidth]{SmackToolchain.png} 
   \caption{SMACK Toolchain}
   \label{fig:SMACKToolchain}
-  \includegraphics[width=1\textwidth]{SmackToolchain.png} 
 \end{figure}
 
 The SMACK toolchain is depicted in Figure~\ref{fig:SMACKToolchain}.
@@ -150,12 +150,10 @@ level Boogie injection.
 The most illustrative way to introduce Boogie IVL is to simply show an
 input C program and the relevant portions of the Boogie output that
 SMACK returns. 
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
-\caption{SMACK Translation of C Program}\label{fig:cToBoogie}
 \begin{subfigure}[b]{.45\textwidth}
 \centering
-\caption{Input C Code}\label{fig:cToBoogie_a}
 \begin{lstlisting}
 
 
@@ -168,11 +166,11 @@ void main() {
   assert(*x == 1);
 }
 \end{lstlisting}
+\caption{Input C Code}\label{fig:cToBoogie_a}
 \end{subfigure}
 ~
 \begin{subfigure}[b]{.45\textwidth}
 \centering
-\caption{Boogie Code from SMACK}\label{fig:cToBoogie_b}
 \begin{lstlisting}[language=boogie]
 var $M: [int]int;
 
@@ -185,7 +183,9 @@ procedure main() {
   assert($M[$x] == 1);
 }
 \end{lstlisting}
+\caption{Boogie Code from SMACK}\label{fig:cToBoogie_b}
 \end{subfigure}
+\caption{SMACK Translation of C Program}\label{fig:cToBoogie}
 \end{figure}
 
 Figure~\ref{fig:cToBoogie_b} shows a reduced version of the Boogie
@@ -215,10 +215,8 @@ Boogie IVL, and recognizes the following concurrency primitives:
   most recently spawned thread
 \end{itemize}
 
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
-\caption{Utilizing Corral Concurrency Primitives}
-\label{fig:corralprimitives}
 \begin{lstlisting}[language=boogie]
 var $x: int;
 procedure f() modifies $x; {
@@ -240,6 +238,8 @@ procedure main() {
   assert($x == $ch1 || $x == $ch2);
 }
 \end{lstlisting}
+\caption{Utilizing Corral Concurrency Primitives}
+\label{fig:corralprimitives}
 \end{figure}
 
 
@@ -284,12 +284,10 @@ important for modeling the pthread extension to SMACK.
   string \lstinline|format| as a global declaration 
 \end{itemize}
 
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
-\caption{Injecting Boogie Code from C}\label{fig:cinjToBoogie}
 \begin{subfigure}[b]{1\textwidth}
 \centering
-\caption{Boogie Injecting C Code}\label{fig:cinjToBoogie_a}
 \begin{lstlisting}
 void main() {
   __SMACK_top_decl("var $globalVar: int;");
@@ -301,11 +299,11 @@ void main() {
   assert(*x == 2);
 }
 \end{lstlisting}
+\caption{Boogie Injecting C Code}\label{fig:cinjToBoogie_a}
 \end{subfigure}
 ~
 \begin{subfigure}[b]{1\textwidth}
 \centering
-\caption{Injected Boogie Translation}\label{fig:cinjToBoogie_b}
 \begin{lstlisting}[language=boogie]
 var $globalVar: int;
 var $M: [int]int;
@@ -319,7 +317,9 @@ procedure main() {
   assert($M[$x] == 2);
 }
 \end{lstlisting}
+\caption{Injected Boogie Translation}\label{fig:cinjToBoogie_b}
 \end{subfigure}
+\caption{Injecting Boogie Code from C}\label{fig:cinjToBoogie}
 \end{figure}
 
 Input to both of these functions is similar to that of C's

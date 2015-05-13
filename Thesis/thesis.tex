@@ -3,7 +3,6 @@
 % SETUP
 \usepackage{amssymb}
 \usepackage{graphicx}
-\usepackage{caption}
 \usepackage{subcaption}
 \usepackage{multicol}
 \usepackage{adjustbox}
@@ -128,14 +127,14 @@
 \copyrightyear{2015}
 \thesistype{thesis}
 
-
+\setlength{\paperheight}{11in}
 \usepackage{hyperref}
 \hypersetup{
     colorlinks,
     citecolor=black,
     filecolor=black,
     linkcolor=black,
-    urlcolor=black,
+    urlcolor=blue,
     bookmarksopen=true,
     bookmarksopenlevel=0
 }
@@ -161,6 +160,9 @@
     dest=\@currentHref,
     ]{Table \thefigure: \@currentlabelname}}}%
 }{}{\errmessage{Patching \noexpand\endtable failed}}
+
+%%% Set toc level for groupheader, to avoid warning
+\providecommand*{\toclevel@groupheader}{0}
 \makeatother
 
 % DOCUMENT

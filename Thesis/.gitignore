@@ -8,4 +8,5 @@
 *.lot
 *.toc
 *.pdf
+*.out.ps
 auto/

@@ -33,7 +33,7 @@ procedures prioritized for modeling according to their frequency of
 occurrence within this sample set. 
 
 This analysis yielded some good insight into the commonly utilized
-functionality of the pthread library.  As expected, the basic
+functionality of the pthread library.  As expected, basic
 procedures such as \lstinline[breaklines]|pthread_create()|,
 \lstinline[breaklines]|pthread_join()|,
 \lstinline[breaklines]|pthread_mutex_lock()| and 
@@ -168,6 +168,11 @@ With the most commonly used pthread functions modeled, the pthread
 extension to SMACK is certainly ready for experimental use, and even
 real-world use with programs that don't fully utilize the pthread
 API. 
+
+This implementation extending SMACK to provide support for the
+pthread library is an open source contribution, and is available as
+part of the SMACK public repository, which can be found at
+\url{https://github.com/smackers/smack}.
 
 %%% Local Variables: 
 %%% mode: latex

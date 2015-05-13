@@ -64,7 +64,7 @@ comparison between SMACK and Lazy-CSeq, the winner of the 2015 SVCOMP
 Concurrency category.   Future work will certainly include proper
 benchmarking for performance. 
 
-\section{Results \& Analysis}
+\section{Results and Analysis}
 The results of the benchmark testing described in
 Section~\ref{sec:methodology} are seen in
 Table~\ref{table:benchmarkresults}.  Running times for Lazy-CSeq, the winner 
@@ -76,64 +76,63 @@ identically.
 \newcommand{\specialcell}[3][c]{%
   \begin{tabular}[#1]{@{}#2@{}}#3\end{tabular}}
 
-\begin{table}[h,center]
+\begin{table}[ht]
 \centering
-\caption{SVCOMP Benchmark Results}\label{table:benchmarkresults}
-\begin{tabular}{|l|c|r|r|r|r|r|}
+\begin{tabular}{|l|r|r|r|r|r|}
 \hline 
 \multicolumn{1}{|c|}{\bfseries{Benchmark}} & 
- \specialcell{c}{\bfseries{Correct}\\\bfseries{Result}} &
  \multicolumn{1}{c|}{\bfseries{LOC}} &
  \specialcell{c}{\bfseries{Thread}\\\bfseries{Count}} & 
  \specialcell{c}{\bfseries{Context}\\\bfseries{Switches}} &
- \specialcell{c}{\bfseries{SMACK}\\\bfseries{Runtime}} &
- \specialcell{c}{\bfseries{Lazy-CSeq}\\\bfseries{Runtime}} \\
+ \specialcell{c}{\bfseries{SMACK}\\\bfseries{Runtime (s)}} &
+ \specialcell{c}{\bfseries{Lazy-CSeq}\\\bfseries{Runtime (s)}} \\
+\hline\hline
+dekker\_true.c             & 62  & 3       & 3            & 2             & 4            \\
 \hline
-dekker\_true.c             & Y & 62  & 3       & 3            & 2 s             & 4 s            \\
+lamport\_true.c            & 83  & 3       & 3            & 3             & 5            \\
 \hline
-lamport\_true.c            & Y & 83  & 3       & 3            & 3 s             & 5 s            \\
+lazy01\_false.c            & 57  & 4       & 2            & 5             & 1            \\
 \hline
-lazy01\_false.c            & Y & 57  & 4       & 2            & 5 s             & 1 s            \\
+peterson\_true.c           & 49  & 3       & 3            & 2             & 2            \\
 \hline
-peterson\_true.c           & Y & 49  & 3       & 3            & 2 s             & 2 s            \\
+qrcu\_false.c              & 155 & 4       & 3            & 102           & 1            \\
 \hline
-qrcu\_false.c              & Y & 155 & 4       & 3            & 102 s           & 1 s            \\
+queue\_false.c             & 185 & 3       & 2            & \specialcell[c]{r}{180\\(Size=10)} &
+                                                                \specialcell[c]{r}{18\\(Size=20)} \\
 \hline
-queue\_false.c             & Y & 185 & 3       & 2            & \specialcell[c]{r}{180 s\\(Size=10)} &
-                                                                \specialcell[c]{r}{18 s\\(Size=20)} \\
+queue\_ok\_true.c          & 160 & 3       & 2            & \specialcell[c]{r}{295\\(Size=10)} &
+                                                                \specialcell[c]{r}{51\\(Size=20)} \\
 \hline
-queue\_ok\_true.c          & Y & 160 & 3       & 2            & \specialcell[c]{r}{295 s\\(Size=10)} &
-                                                                \specialcell[c]{r}{51 s\\(Size=20)} \\
+reorder\_2\_false.c        & 90  & 5       & 2            & 4             & 2            \\
 \hline
-reorder\_2\_false.c        & Y & 90  & 5       & 2            & 4 s             & 2 s            \\
+reorder\_5\_false.c        & 88  & 6       & 2            & 11            & 3            \\
 \hline
-reorder\_5\_false.c        & Y & 88  & 6       & 2            & 11 s            & 3 s            \\
+scull\_true.c              & 477 & 4       & 2            & N/A             & 5            \\
 \hline
-scull\_true.c              & N & 477 & 4       & 2            & N/A             & 5 s            \\
+sigma\_false.c             & 55  & 6       & 2            & 85            & 9            \\
 \hline
-sigma\_false.c             & Y & 55  & 6       & 2            & 85 s            & 9 s            \\
+singleton\_false.c         & 64  & 7       & 2            & 75            & 3            \\
 \hline
-singleton\_false.c         & Y & 64  & 7       & 2            & 75 s            & 3 s            \\
+sssc12\_true.c             & 43  & 11      & 2            & 54            & 14           \\
 \hline
-sssc12\_true.c             & Y & 43  & 11      & 2            & 54 s            & 14 s           \\
+stack\_false.c             & 127 & 3       & 2            & 18            & 1            \\
 \hline
-stack\_false.c             & Y & 127 & 3       & 2            & 18 s            & 1 s            \\
+stack\_true.c              & 131 & 3       & 2            & 731           & 77           \\
 \hline
-stack\_true.c              & Y & 131 & 3       & 2            & 731 s           & 77 s           \\
+stateful01\_false.c        & 62  & 3       & 2            & 5             & 1            \\
 \hline
-stateful01\_false.c        & Y & 62  & 3       & 2            & 5 s             & 1 s            \\
+stateful01\_true.c         & 62  & 3       & 2            & 14            & 3            \\
 \hline
-stateful01\_true.c         & Y & 62  & 3       & 2            & 14 s            & 3 s            \\
+sync01\_true.c             & 71  & 3       & 2            & 27            & 3            \\
 \hline
-sync01\_true.c             & Y & 71  & 3       & 2            & 27 s            & 3 s            \\
+szymanski\_true.c          & 62  & 3       & 2            & 2             & 3            \\
 \hline
-szymanski\_true.c          & Y & 62  & 3       & 2            & 2 s             & 3 s            \\
+time\_var\_mutex\_true.c   & 62  & 3       & 2            & 22            & 3            \\
 \hline
-timevar\_mtx\_true.c       & Y & 62  & 3       & 2            & 22 s            & 3 s            \\
-\hline
-twostage\_3\_false.c       & Y & 136 & 4       & 2            & 19 s            & 2 s            \\
+twostage\_3\_false.c       & 136 & 4       & 2            & 19            & 2            \\
 \hline
 \end{tabular}
+\caption{SVCOMP Benchmark Results}\label{table:benchmarkresults}
 \end{table}
 
 The most remarkable aspect of the results is the rate of returning a

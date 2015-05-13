@@ -116,9 +116,8 @@ the newly spawned child thread, and record this value in the
 \lstinline|pthread_t| struct for future reference.  This results in
 the model defined in the C code seen in Figure~\ref{fig:pthread_create}.
 
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
-\caption{Model: pthread\_create()}\label{fig:pthread_create}
 \begin{lstlisting}
 int pthread_create(pthread_t* __newthread,
                    pthread_attr_t* __attr,
@@ -136,6 +135,7 @@ int pthread_create(pthread_t* __newthread,
   return 0;
 }
 \end{lstlisting}
+\caption{Model: pthread\_create()}\label{fig:pthread_create}
 \end{figure}
 
 In the newly spawned thread, again there is bookkeeping to do, as well
@@ -158,9 +158,8 @@ spawned thread's ID, and can use this to index into
 \lstinline|$pthreadStatus| to set and query the child thread's running
 state information.
 
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
-\caption{Model: \_\_call\_wrapper()}\label{fig:__call_wrapper}
 \begin{lstlisting}
 void __call_wrapper(pthread_t* __newthread,
                     void* (*__start_routine)(void *),
@@ -181,6 +180,7 @@ void __call_wrapper(pthread_t* __newthread,
                *__newthread);
 }
 \end{lstlisting}
+\caption{Model: \_\_call\_wrapper()}\label{fig:__call_wrapper}
 \end{figure}
 
 Once the child and parent can both reference the correct
@@ -228,9 +228,8 @@ model stores the thread ID of the current mutex owner in the
 mutex is in the \emph{UNLOCKED} state.
 
 
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
-\caption{Model: pthread\_mutex\_lock()}\label{fig:pthread_mutex_lock}
 \begin{lstlisting}
 int pthread_mutex_lock(pthread_mutex_t* __mutex)
 {
@@ -246,6 +245,7 @@ int pthread_mutex_lock(pthread_mutex_t* __mutex)
   return 0;
 }
 \end{lstlisting}
+\caption{Model: pthread\_mutex\_lock()}\label{fig:pthread_mutex_lock}
 \end{figure}
 
 This leads to the straightforward model shown in
@@ -264,10 +264,8 @@ essentially the inverse of \lstinline|pthread_mutex_lock()|; the model
 ensures the mutex is initialized and the calling thread is the current
 owner, and atomically sets the mutex as being unlocked. 
 
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
-\caption{Model: pthread\_mutex\_unlock()}
-\label{fig:pthread_mutex_unlock}
 \begin{lstlisting}
 int pthread_mutex_unlock(pthread_mutex_t* __mutex)
 {
@@ -282,6 +280,8 @@ int pthread_mutex_unlock(pthread_mutex_t* __mutex)
   return 0;
 }
 \end{lstlisting}
+\caption{Model: pthread\_mutex\_unlock()}
+\label{fig:pthread_mutex_unlock}
 \end{figure}
 
 \subsection{Complex Synchronization}
@@ -333,9 +333,8 @@ into \lstinline|pthread_exit(void* value)| as the second tuple
 element, in addition to storing the thread'ss running state as the
 first element.
 
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
-\caption{Model: pthread\_exit()}\label{fig:pthread_exit}
 \begin{lstlisting}
 void pthread_exit(void *retval)
 {
@@ -352,6 +351,7 @@ void pthread_exit(void *retval)
                tid);
 }
 \end{lstlisting}
+\caption{Model: pthread\_exit()}\label{fig:pthread_exit}
 \end{figure}
 
 The model of \lstinline|pthread_exit()|, seen in
@@ -382,9 +382,8 @@ the \lstinline|$pthreadStatus| array, which is then assigned to the
 pointer \lstinline|__thread_return|.
 
 
-\begin{figure}[h]
+\begin{figure}[!ht]
 \centering
-\caption{Model: pthread\_join()}\label{fig:pthread_join}
 \begin{lstlisting}
 int pthread_join(pthread_t __th, void **__thread_return)
 {
@@ -399,6 +398,7 @@ int pthread_join(pthread_t __th, void **__thread_return)
 }
 
 \end{lstlisting}
+\caption{Model: pthread\_join()}\label{fig:pthread_join}
 \end{figure}
 
 %%% Local Variables: 
