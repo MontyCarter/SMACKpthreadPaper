@@ -1360,26 +1360,26 @@
 
   \begin{flushleft}
     Approved:\\
+    \includegraphics[width=1\textwidth]{Signatures.png} 
+    %\mbox{} \\ \mbox{} \\ \mbox{} \\
 
-    \mbox{} \\ \mbox{} \\ \mbox{} \\
+    %\mbox{\rule{\minilength}{0.4pt}}
+    %\@supervisor \hfill Date\\
+    %Supervisor\\
 
-    \mbox{\rule{\minilength}{0.4pt}}
-    \@supervisor \hfill Date\\
-    Supervisor\\
+    %\mbox{} \\ \mbox{} \\ \mbox{} \\
 
-    \mbox{} \\ \mbox{} \\ \mbox{} \\
+    %\mbox{\rule{\minilength}{0.4pt}}
+    %H. James de St. Germain \hfill Date\\
+    %Director of Undergraduate Studies\\
+    %School of Computing\\
 
-    \mbox{\rule{\minilength}{0.4pt}}
-    H. James de St. Germain \hfill Date\\
-    Director of Undergraduate Studies\\
-    School of Computing\\
+    %\mbox{} \\ \mbox{} \\ \mbox{} \\
 
-    \mbox{} \\ \mbox{} \\ \mbox{} \\
-
-    \mbox{\rule{\minilength}{0.4pt}}
-    Ross Whitaker \hfill Date\\
-    Director\\
-    School of Computing\\
+    %\mbox{\rule{\minilength}{0.4pt}}
+    %Ross Whitaker \hfill Date\\
+    %Director\\
+    %School of Computing\\
 
   \end{flushleft}
 
